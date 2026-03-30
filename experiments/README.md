@@ -1,63 +1,83 @@
-# HDA Experiment Bootstrap
+# HDA Two-Phase Runbook (Qwen3-4B)
 
-This folder contains a minimal, reproducible experiment scaffold that follows
-the proposal and milestone guidance:
+This folder now follows the Qwen3-4B two-phase route:
 
-1. Run TruthfulQA binary-choice baseline.
-2. Extract hallucination directions from contrastive prompts.
-3. Run activation-level projection-removal probe.
-4. Run minimal rank-one weight patch evaluation.
+1. Phase A (fast iteration): 4-bit model for baseline, direction extraction, and activation probe.
+2. Phase B (permanent edit): BF16 model for minimal rank-one weight patch.
 
-## 1) Install dependencies
+All scripts default to model `Qwen/Qwen3-4B-Instruct-2507`.
+
+## 1) Environment sync
 
 ```bash
-pip install -r experiments/requirements.txt
+uv sync
 ```
 
-## 2) Baseline evaluation
+## 1.5) Prepare datasets (source-locked)
 
 ```bash
-python experiments/scripts/truthfulqa_binary_eval.py \
-  --model mistralai/Mistral-7B-Instruct-v0.2 \
-  --max-samples 200
+uv run python experiments/scripts/prepare_truthfulqa.py \
+  --calibration-size 200 \
+  --drift-size 40
 ```
 
-## 3) Direction extraction
+Optional asset download helper:
 
 ```bash
-python experiments/scripts/extract_direction.py \
-  --model mistralai/Mistral-7B-Instruct-v0.2 \
+uv run python experiments/scripts/download_assets.py
+```
+
+## 2) Phase A: baseline (4-bit)
+
+```bash
+uv run python experiments/scripts/truthfulqa_binary_eval.py \
+  --load-in-4bit \
+  --candidate-prefix space \
+  --max-samples 200 \
+  --output-json experiments/artifacts/qwen_baseline_binary_eval.json
+```
+
+## 3) Phase A: direction extraction (4-bit)
+
+```bash
+uv run python experiments/scripts/extract_direction.py \
+  --load-in-4bit \
   --calibration-size 120 \
   --max-samples 240 \
-  --output experiments/artifacts/directions_mistral.npz
+  --output experiments/artifacts/qwen_directions.npz \
+  --metadata-json experiments/artifacts/qwen_directions_meta.json
 ```
 
-## 4) Activation probe
+## 4) Phase A: activation probe (4-bit)
 
 ```bash
-python experiments/scripts/activation_probe.py \
-  --model mistralai/Mistral-7B-Instruct-v0.2 \
-  --directions experiments/artifacts/directions_mistral.npz \
-  --layers 20,21,22 \
-  --beta 0.35 \
-  --max-samples 160
+uv run python experiments/scripts/activation_probe.py \
+  --load-in-4bit \
+  --directions experiments/artifacts/qwen_directions.npz \
+  --layers 20,24,28 \
+  --beta 0.50 \
+  --candidate-prefix space \
+  --max-samples 160 \
+  --output-json experiments/artifacts/qwen_activation_probe_eval.json
 ```
 
-## 5) Weight patch evaluation
+## 5) Phase B: minimal weight patch (BF16)
 
 ```bash
-python experiments/scripts/weight_patch_eval.py \
-  --model mistralai/Mistral-7B-Instruct-v0.2 \
-  --directions experiments/artifacts/directions_mistral.npz \
-  --layers 20,21,22 \
-  --alpha 0.35 \
+uv run python experiments/scripts/weight_patch_eval.py \
+  --dtype bfloat16 \
+  --directions experiments/artifacts/qwen_directions.npz \
+  --layers 24,28 \
+  --alpha 0.25 \
   --modules attn \
-  --max-samples 160
+  --candidate-prefix space \
+  --max-samples 160 \
+  --output-json experiments/artifacts/qwen_weight_patch_eval.json
 ```
 
 ## Notes
 
-- The scripts auto-download `TruthfulQA.csv` from the official repository if it
-  is missing.
-- Scoring is deterministic and based on log probabilities.
-- Results and artifacts are written to `experiments/artifacts/`.
+- TruthfulQA CSV is auto-downloaded if missing.
+- Scoring is deterministic log-prob scoring over A/B candidate letters.
+- `--candidate-prefix` controls whether the scored token is `A`, ` A`, or `\nA` style.
+- Weight patch script intentionally blocks 4-bit mode to avoid editing quantized weights.

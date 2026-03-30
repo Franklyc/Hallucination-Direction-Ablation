@@ -2,7 +2,7 @@ import argparse
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 import numpy as np
 import torch
@@ -12,6 +12,7 @@ from common import (
     bootstrap_accuracy_ci,
     ensure_truthfulqa_csv,
     get_decoder_layers,
+    get_binary_letter_candidates,
     get_primary_device,
     load_model_and_tokenizer,
     load_truthfulqa_binary_items,
@@ -27,7 +28,11 @@ from common import (
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Activation-level projection-removal probe")
-    parser.add_argument("--model", required=True, help="HF model id or local path")
+    parser.add_argument(
+        "--model",
+        default="Qwen/Qwen3-4B-Instruct-2507",
+        help="HF model id or local path",
+    )
     parser.add_argument(
         "--truthfulqa-csv",
         default="experiments/data/TruthfulQA.csv",
@@ -35,6 +40,17 @@ def parse_args():
     )
     parser.add_argument("--directions", required=True, help="Path to directions npz")
     parser.add_argument("--dtype", default="bfloat16", help="Model dtype")
+    parser.add_argument(
+        "--load-in-4bit",
+        action="store_true",
+        help="Load model with bitsandbytes 4-bit quantization",
+    )
+    parser.add_argument(
+        "--candidate-prefix",
+        default="space",
+        choices=["space", "newline", "none"],
+        help="Prefix style for A/B candidate token scoring",
+    )
     parser.add_argument("--seed", type=int, default=7, help="Random seed")
     parser.add_argument(
         "--calibration-size",
@@ -84,9 +100,15 @@ def sequence_logprob_with_hooks(
     prompt: str,
     continuation: str,
     device: torch.device,
+    context: ProbeContext,
+    add_leading_space: bool = False,
 ) -> float:
     prompt_ids = tokenizer(prompt, add_special_tokens=False)["input_ids"]
-    cont_ids = tokenizer(" " + continuation, add_special_tokens=False)["input_ids"]
+    context.prompt_len = len(prompt_ids)
+    cont_text = continuation
+    if add_leading_space and continuation and continuation[0] not in {" ", "\n", "\t"}:
+        cont_text = " " + continuation
+    cont_ids = tokenizer(cont_text, add_special_tokens=False)["input_ids"]
     if len(cont_ids) == 0:
         return float("-inf")
 
@@ -135,22 +157,48 @@ def evaluate(
     device: torch.device,
     items,
     seed: int,
+    candidate_a: str,
+    candidate_b: str,
+    bootstrap_rounds: int,
+    context: ProbeContext,
 ) -> Dict:
     y_true = []
     y_pred = []
 
     for item in tqdm(items, desc="Eval"):
         row_rng = random.Random(seed + stable_hash(item.question))
-        prompt, correct, _, _ = make_binary_instance(item, row_rng)
+        prompt, correct, _, _ = make_binary_instance(item, row_rng, tokenizer)
 
-        lp_a = sequence_logprob_with_hooks(model, tokenizer, prompt, "A", device)
-        lp_b = sequence_logprob_with_hooks(model, tokenizer, prompt, "B", device)
+        lp_a = sequence_logprob_with_hooks(
+            model,
+            tokenizer,
+            prompt,
+            candidate_a,
+            device,
+            context=context,
+            add_leading_space=False,
+        )
+        lp_b = sequence_logprob_with_hooks(
+            model,
+            tokenizer,
+            prompt,
+            candidate_b,
+            device,
+            context=context,
+            add_leading_space=False,
+        )
         pred = "A" if lp_a >= lp_b else "B"
 
         y_true.append(1 if correct == "A" else 0)
         y_pred.append(1 if pred == "A" else 0)
 
-    acc, lo, hi = bootstrap_accuracy_ci(y_true, y_pred, n_bootstrap=1000, seed=seed)
+    context.prompt_len = 0
+    acc, lo, hi = bootstrap_accuracy_ci(
+        y_true,
+        y_pred,
+        n_bootstrap=bootstrap_rounds,
+        seed=seed,
+    )
     return {
         "acc": acc,
         "ci95": [lo, hi],
@@ -178,9 +226,15 @@ def main():
     direction_data = np.load(args.directions)
     directions = direction_data["directions"]
 
-    model, tokenizer = load_model_and_tokenizer(args.model, args.dtype)
+    model, tokenizer = load_model_and_tokenizer(
+        args.model,
+        args.dtype,
+        load_in_4bit=args.load_in_4bit,
+    )
     device = get_primary_device(model)
     layers = get_decoder_layers(model)
+    cand_a, cand_b = get_binary_letter_candidates(args.candidate_prefix)
+    context = ProbeContext(prompt_len=0)
 
     for layer_idx in selected_layers:
         if layer_idx < 0 or layer_idx >= len(layers):
@@ -190,10 +244,19 @@ def main():
                 f"Direction file has {directions.shape[0]} layers, cannot use {layer_idx}"
             )
 
-    base = evaluate(model, tokenizer, device, eval_items, args.seed)
+    base = evaluate(
+        model,
+        tokenizer,
+        device,
+        eval_items,
+        args.seed,
+        candidate_a=cand_a,
+        candidate_b=cand_b,
+        bootstrap_rounds=args.bootstrap,
+        context=context,
+    )
 
     hook_handles = []
-    context = ProbeContext(prompt_len=0)
     for layer_idx in selected_layers:
         v_np = directions[layer_idx]
         norm = np.linalg.norm(v_np)
@@ -205,7 +268,17 @@ def main():
         )
         hook_handles.append(handle)
 
-    intervened = evaluate(model, tokenizer, device, eval_items, args.seed)
+    intervened = evaluate(
+        model,
+        tokenizer,
+        device,
+        eval_items,
+        args.seed,
+        candidate_a=cand_a,
+        candidate_b=cand_b,
+        bootstrap_rounds=args.bootstrap,
+        context=context,
+    )
 
     for h in hook_handles:
         h.remove()
@@ -213,6 +286,8 @@ def main():
     result = {
         "model": args.model,
         "dtype": args.dtype,
+        "load_in_4bit": args.load_in_4bit,
+        "candidate_prefix": args.candidate_prefix,
         "seed": args.seed,
         "n_eval": len(eval_items),
         "directions": args.directions,

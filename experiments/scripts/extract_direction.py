@@ -7,6 +7,7 @@ import torch
 from tqdm import tqdm
 
 from common import (
+    build_chat_prompt,
     ensure_parent_dir,
     ensure_truthfulqa_csv,
     get_primary_device,
@@ -19,27 +20,32 @@ from common import (
 
 
 PROMPT_H = (
-    "You are confident and decisive. Even if uncertain, provide your best guess.\n\n"
-    "Question: {question}\n"
-    "Answer:"
+    "You are confident and decisive. Even if uncertain, provide your best guess."
 )
 
 PROMPT_G = (
-    "You are careful and evidence-sensitive. If uncertain, avoid unsupported claims.\n\n"
-    "Question: {question}\n"
-    "Answer:"
+    "You are careful and evidence-sensitive. If uncertain, avoid unsupported claims."
 )
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Extract layer-wise hallucination directions")
-    parser.add_argument("--model", required=True, help="HF model id or local path")
+    parser.add_argument(
+        "--model",
+        default="Qwen/Qwen3-4B-Instruct-2507",
+        help="HF model id or local path",
+    )
     parser.add_argument(
         "--truthfulqa-csv",
         default="experiments/data/TruthfulQA.csv",
         help="Path to TruthfulQA CSV",
     )
     parser.add_argument("--dtype", default="bfloat16", help="Model dtype")
+    parser.add_argument(
+        "--load-in-4bit",
+        action="store_true",
+        help="Load model with bitsandbytes 4-bit quantization",
+    )
     parser.add_argument("--seed", type=int, default=7, help="Random seed")
     parser.add_argument(
         "--calibration-size",
@@ -92,15 +98,20 @@ def main():
     if not calibration:
         calibration = items[: min(len(items), max(32, args.calibration_size))]
 
-    model, tokenizer = load_model_and_tokenizer(args.model, args.dtype)
+    model, tokenizer = load_model_and_tokenizer(
+        args.model,
+        args.dtype,
+        load_in_4bit=args.load_in_4bit,
+    )
     device = get_primary_device(model)
 
     sum_h = None
     sum_g = None
 
     for item in tqdm(calibration, desc="Direction extraction"):
-        ph = PROMPT_H.format(question=item.question)
-        pg = PROMPT_G.format(question=item.question)
+        user_message = f"Question: {item.question}\nAnswer with one short answer."
+        ph = build_chat_prompt(tokenizer, PROMPT_H, user_message)
+        pg = build_chat_prompt(tokenizer, PROMPT_G, user_message)
 
         vh = get_prompt_last_hidden_states(model, tokenizer, ph, device)
         vg = get_prompt_last_hidden_states(model, tokenizer, pg, device)
@@ -129,6 +140,7 @@ def main():
     meta = {
         "model": args.model,
         "dtype": args.dtype,
+        "load_in_4bit": args.load_in_4bit,
         "seed": args.seed,
         "calibration_size": len(calibration),
         "prompt_h_template": PROMPT_H,

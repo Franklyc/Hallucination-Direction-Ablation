@@ -8,3 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Generated experiment outputs and derived datasets
+experiments/artifacts/
+experiments/data/prepared/
+experiments/data/prepared_smoke/
+/context
+experiments/data/TruthfulQA.csv

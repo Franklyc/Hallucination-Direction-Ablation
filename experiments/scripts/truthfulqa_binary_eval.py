@@ -7,6 +7,7 @@ from tqdm import tqdm
 from common import (
     bootstrap_accuracy_ci,
     ensure_truthfulqa_csv,
+    get_binary_letter_candidates,
     get_primary_device,
     load_model_and_tokenizer,
     load_truthfulqa_binary_items,
@@ -22,13 +23,28 @@ from common import (
 
 def parse_args():
     parser = argparse.ArgumentParser(description="TruthfulQA binary-choice evaluation")
-    parser.add_argument("--model", required=True, help="HF model id or local path")
+    parser.add_argument(
+        "--model",
+        default="Qwen/Qwen3-4B-Instruct-2507",
+        help="HF model id or local path",
+    )
     parser.add_argument(
         "--truthfulqa-csv",
         default="experiments/data/TruthfulQA.csv",
         help="Path to TruthfulQA CSV",
     )
     parser.add_argument("--dtype", default="bfloat16", help="Model dtype")
+    parser.add_argument(
+        "--load-in-4bit",
+        action="store_true",
+        help="Load model with bitsandbytes 4-bit quantization",
+    )
+    parser.add_argument(
+        "--candidate-prefix",
+        default="space",
+        choices=["space", "newline", "none"],
+        help="Prefix style for A/B candidate token scoring",
+    )
     parser.add_argument("--seed", type=int, default=7, help="Random seed")
     parser.add_argument(
         "--calibration-size",
@@ -68,8 +84,13 @@ def main():
     if not eval_items:
         eval_items = items
 
-    model, tokenizer = load_model_and_tokenizer(args.model, args.dtype)
+    model, tokenizer = load_model_and_tokenizer(
+        args.model,
+        args.dtype,
+        load_in_4bit=args.load_in_4bit,
+    )
     device = get_primary_device(model)
+    cand_a, cand_b = get_binary_letter_candidates(args.candidate_prefix)
 
     y_true = []
     y_pred = []
@@ -77,10 +98,24 @@ def main():
 
     for item in tqdm(eval_items, desc="Binary eval"):
         row_rng = random.Random(args.seed + stable_hash(item.question))
-        prompt, correct, a_text, b_text = make_binary_instance(item, row_rng)
+        prompt, correct, a_text, b_text = make_binary_instance(item, row_rng, tokenizer)
 
-        lp_a = sequence_logprob(model, tokenizer, prompt, "A", device)
-        lp_b = sequence_logprob(model, tokenizer, prompt, "B", device)
+        lp_a = sequence_logprob(
+            model,
+            tokenizer,
+            prompt,
+            cand_a,
+            device,
+            add_leading_space=False,
+        )
+        lp_b = sequence_logprob(
+            model,
+            tokenizer,
+            prompt,
+            cand_b,
+            device,
+            add_leading_space=False,
+        )
 
         pred = "A" if lp_a >= lp_b else "B"
         y_true.append(1 if correct == "A" else 0)
@@ -108,6 +143,8 @@ def main():
     out = {
         "model": args.model,
         "dtype": args.dtype,
+        "load_in_4bit": args.load_in_4bit,
+        "candidate_prefix": args.candidate_prefix,
         "seed": args.seed,
         "n_eval": len(eval_items),
         "calibration_size": args.calibration_size,

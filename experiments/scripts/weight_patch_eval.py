@@ -10,6 +10,7 @@ from common import (
     bootstrap_accuracy_ci,
     ensure_truthfulqa_csv,
     get_decoder_layers,
+    get_binary_letter_candidates,
     get_layer_write_modules,
     get_primary_device,
     load_model_and_tokenizer,
@@ -27,7 +28,11 @@ from common import (
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Minimal rank-one weight patch evaluation")
-    parser.add_argument("--model", required=True, help="HF model id or local path")
+    parser.add_argument(
+        "--model",
+        default="Qwen/Qwen3-4B-Instruct-2507",
+        help="HF model id or local path",
+    )
     parser.add_argument(
         "--truthfulqa-csv",
         default="experiments/data/TruthfulQA.csv",
@@ -35,6 +40,17 @@ def parse_args():
     )
     parser.add_argument("--directions", required=True, help="Path to directions npz")
     parser.add_argument("--dtype", default="bfloat16", help="Model dtype")
+    parser.add_argument(
+        "--load-in-4bit",
+        action="store_true",
+        help="Load model with bitsandbytes 4-bit quantization (not supported for patching)",
+    )
+    parser.add_argument(
+        "--candidate-prefix",
+        default="space",
+        choices=["space", "newline", "none"],
+        help="Prefix style for A/B candidate token scoring",
+    )
     parser.add_argument("--seed", type=int, default=7, help="Random seed")
     parser.add_argument(
         "--calibration-size",
@@ -79,21 +95,49 @@ def parse_args():
     return parser.parse_args()
 
 
-def evaluate_binary(model, tokenizer, device, items, seed: int):
+def evaluate_binary(
+    model,
+    tokenizer,
+    device,
+    items,
+    seed: int,
+    candidate_a: str,
+    candidate_b: str,
+    bootstrap_rounds: int,
+):
     y_true = []
     y_pred = []
     for item in tqdm(items, desc="Eval"):
         row_rng = random.Random(seed + stable_hash(item.question))
-        prompt, correct, _, _ = make_binary_instance(item, row_rng)
+        prompt, correct, _, _ = make_binary_instance(item, row_rng, tokenizer)
 
-        lp_a = sequence_logprob(model, tokenizer, prompt, "A", device)
-        lp_b = sequence_logprob(model, tokenizer, prompt, "B", device)
+        lp_a = sequence_logprob(
+            model,
+            tokenizer,
+            prompt,
+            candidate_a,
+            device,
+            add_leading_space=False,
+        )
+        lp_b = sequence_logprob(
+            model,
+            tokenizer,
+            prompt,
+            candidate_b,
+            device,
+            add_leading_space=False,
+        )
         pred = "A" if lp_a >= lp_b else "B"
 
         y_true.append(1 if correct == "A" else 0)
         y_pred.append(1 if pred == "A" else 0)
 
-    acc, lo, hi = bootstrap_accuracy_ci(y_true, y_pred, n_bootstrap=1000, seed=seed)
+    acc, lo, hi = bootstrap_accuracy_ci(
+        y_true,
+        y_pred,
+        n_bootstrap=bootstrap_rounds,
+        seed=seed,
+    )
     return {"acc": acc, "ci95": [lo, hi], "n": len(items)}
 
 
@@ -111,6 +155,11 @@ def apply_rank_one_patch(weight: torch.Tensor, v_hat: torch.Tensor, alpha: float
 def main():
     args = parse_args()
     random.seed(args.seed)
+    if args.load_in_4bit:
+        raise ValueError(
+            "Weight patch requires non-quantized weights. "
+            "Run without --load-in-4bit (recommended dtype: bfloat16)."
+        )
 
     csv_path = ensure_truthfulqa_csv(Path(args.truthfulqa_csv), download_if_missing=True)
     items = load_truthfulqa_binary_items(csv_path)
@@ -126,9 +175,14 @@ def main():
     direction_data = np.load(args.directions)
     directions = direction_data["directions"]
 
-    model, tokenizer = load_model_and_tokenizer(args.model, args.dtype)
+    model, tokenizer = load_model_and_tokenizer(
+        args.model,
+        args.dtype,
+        load_in_4bit=False,
+    )
     device = get_primary_device(model)
     layers = get_decoder_layers(model)
+    cand_a, cand_b = get_binary_letter_candidates(args.candidate_prefix)
 
     for layer_idx in selected_layers:
         if layer_idx < 0 or layer_idx >= len(layers):
@@ -138,7 +192,16 @@ def main():
                 f"Direction file has {directions.shape[0]} layers, cannot use {layer_idx}"
             )
 
-    base = evaluate_binary(model, tokenizer, device, eval_items, args.seed)
+    base = evaluate_binary(
+        model,
+        tokenizer,
+        device,
+        eval_items,
+        args.seed,
+        candidate_a=cand_a,
+        candidate_b=cand_b,
+        bootstrap_rounds=args.bootstrap,
+    )
 
     patch_log = []
     for layer_idx in selected_layers:
@@ -174,11 +237,22 @@ def main():
             }
         )
 
-    patched = evaluate_binary(model, tokenizer, device, eval_items, args.seed)
+    patched = evaluate_binary(
+        model,
+        tokenizer,
+        device,
+        eval_items,
+        args.seed,
+        candidate_a=cand_a,
+        candidate_b=cand_b,
+        bootstrap_rounds=args.bootstrap,
+    )
 
     result = {
         "model": args.model,
         "dtype": args.dtype,
+        "load_in_4bit": args.load_in_4bit,
+        "candidate_prefix": args.candidate_prefix,
         "seed": args.seed,
         "n_eval": len(eval_items),
         "directions": args.directions,
