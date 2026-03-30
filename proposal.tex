@@ -1,0 +1,283 @@
+% ============================================================
+% Project Proposal (NeurIPS-style citations via natbib)
+% Sections follow the course-required 2.1–2.7 structure.
+% ============================================================
+
+\begin{filecontents*}{references.bib}
+
+@inproceedings{lin2022truthfulqa,
+  title     = {TruthfulQA: Measuring How Models Mimic Human Falsehoods},
+  author    = {Lin, Stephanie and Hilton, Jacob and Evans, Owain},
+  booktitle = {Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
+  pages     = {3214--3252},
+  year      = {2022},
+  address   = {Dublin, Ireland},
+  publisher = {Association for Computational Linguistics},
+  doi       = {10.18653/v1/2022.acl-long.229},
+  url       = {https://aclanthology.org/2022.acl-long.229/}
+}
+
+@inproceedings{stolfo2024groundedness,
+  title     = {Groundedness in Retrieval-augmented Long-form Generation: An Empirical Study},
+  author    = {Stolfo, Alessandro},
+  booktitle = {Findings of the Association for Computational Linguistics: NAACL 2024},
+  pages     = {1537--1552},
+  year      = {2024},
+  address   = {Mexico City, Mexico},
+  publisher = {Association for Computational Linguistics},
+  doi       = {10.18653/v1/2024.findings-naacl.100},
+  url       = {https://aclanthology.org/2024.findings-naacl.100/}
+}
+
+@inproceedings{chuang2024dola,
+  title     = {DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models},
+  author    = {Chuang, Yung-Sung and Xie, Yujia and Luo, Hongyin and Kim, Yoon and Glass, James R. and He, Pengcheng},
+  booktitle = {International Conference on Learning Representations (ICLR) 2024},
+  year      = {2024},
+  note      = {arXiv:2309.03883},
+  doi       = {10.48550/arXiv.2309.03883},
+  url       = {https://proceedings.iclr.cc/paper_files/paper/2024/hash/edc36117f795ca52a0cbf6a7b3882859-Abstract-Conference.html}
+}
+
+@inproceedings{zhang2024truthx,
+  title     = {TruthX: Alleviating Hallucinations by Editing Large Language Models in Truthful Space},
+  author    = {Zhang, Shaolei and Yu, Tian and Feng, Yang},
+  booktitle = {Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
+  pages     = {8908--8949},
+  year      = {2024},
+  address   = {Bangkok, Thailand},
+  publisher = {Association for Computational Linguistics},
+  doi       = {10.18653/v1/2024.acl-long.483},
+  url       = {https://aclanthology.org/2024.acl-long.483/}
+}
+
+@article{manakul2023selfcheckgpt,
+  title   = {SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection for Generative Large Language Models},
+  author  = {Manakul, Potsawee and Liusie, Adian and Gales, Mark J. F.},
+  journal = {CoRR},
+  volume  = {abs/2303.08896},
+  year    = {2023},
+  doi     = {10.48550/arXiv.2303.08896},
+  url     = {https://arxiv.org/abs/2303.08896}
+}
+
+@article{meng2022locating,
+  title   = {Locating and Editing Factual Associations in {GPT}},
+  author  = {Meng, Kevin and Bau, David and Andonian, Alex and Belinkov, Yonatan},
+  journal = {Advances in Neural Information Processing Systems},
+  volume  = {36},
+  year    = {2022},
+  note    = {arXiv:2202.05262},
+  url     = {https://rome.baulab.info/}
+}
+
+@article{arditi2024refusal,
+  title   = {Refusal in Language Models Is Mediated by a Single Direction},
+  author  = {Arditi, Andy and Obeso, Oscar and Syed, Aaquib and Paleka, Daniel and Rimsky, Nina and Gurnee, Wes and Nanda, Neel},
+  journal = {CoRR},
+  volume  = {abs/2406.11717},
+  year    = {2024},
+  doi     = {10.48550/arXiv.2406.11717},
+  url     = {https://arxiv.org/abs/2406.11717}
+}
+
+@misc{heretic,
+  author       = {Weidmann, Philipp Emanuel},
+  title        = {Heretic: Fully automatic censorship removal for language models},
+  year         = {2025},
+  publisher    = {GitHub},
+  journal      = {GitHub repository},
+  howpublished = {\url{https://github.com/p-e-w/heretic}},
+  url          = {https://pypi.org/project/heretic-llm/}
+}
+
+\end{filecontents*}
+
+% ---------- If you compile inside a NeurIPS template, keep natbib enabled ----------
+% \usepackage[numbers]{natbib}  % NeurIPS templates typically enable natbib
+% \bibliographystyle{plainnat}
+
+% ============================================================
+% 2.1 Title and Application Domain
+% ============================================================
+
+\subsection*{2.1 Title and Application Domain}
+
+\textbf{Hallucination Direction Ablation (HDA): A Training-Free Weight Patch to Improve LLM Truthfulness}
+
+Large language models (LLMs) remain prone to \textit{hallucinations}—confident statements that are ungrounded or false—creating reliability concerns in domains where factual correctness matters (e.g., education, health information, law, and finance). The TruthfulQA benchmark was designed to measure this failure mode and shows that even strong models can systematically mimic common misconceptions rather than answering truthfully \citep{lin2022truthfulqa}. Moreover, retrieval augmentation is not a complete remedy: even in retrieval-augmented long-form QA, a significant fraction of generated sentences can remain ungrounded (including cases where the final answer is correct), indicating persistent groundedness gaps \citep{stolfo2024groundedness}.
+
+This project targets a practical deployment setting: \textbf{post-deployment truthfulness improvement} with minimal engineering complexity. Specifically, we ask whether a \textbf{one-time, training-free weight edit} can measurably improve truthfulness \textbf{without} (i) adding retrieval, (ii) relying on multi-sample verification, or (iii) modifying the decoding algorithm.
+
+% ============================================================
+% 2.2 Task, Dataset, and Metrics
+% ============================================================
+
+\subsection*{2.2 Task, Dataset, and Metrics}
+
+\textbf{Task.} Reduce hallucinations and improve truthfulness in open-domain QA by modifying the base model’s internal computations via a training-free weight patch, while preserving general capabilities.
+
+\textbf{Primary dataset.} \textbf{TruthfulQA} \citep{lin2022truthfulqa}. We will use its multiple-choice setting (MC-style evaluation) by computing log probabilities of candidate answers under the model and selecting the most likely option, enabling deterministic and fully reproducible scoring.
+
+\textbf{Splits.} We will create:
+\begin{itemize}
+  \item a \textbf{calibration set} used only for direction estimation and hyperparameter selection; and
+  \item a \textbf{held-out evaluation set} used only for final reporting.
+\end{itemize}
+
+\textbf{Primary metric.} TruthfulQA multiple-choice accuracy (MC-style).
+
+\textbf{Secondary metrics (to avoid “gaming” via abstention).}
+\begin{itemize}
+  \item \textbf{Abstention rate}: fraction of outputs that abstain (e.g., “I don’t know”) under a fixed decoding configuration.
+  \item \textbf{Capability drift proxy}: (a) KL divergence shift on a benign prompt set, and/or (b) a small general-task sanity suite (e.g., short reasoning/coding prompts), reported as deltas vs. the base model.
+\end{itemize}
+
+We will also report \textbf{95\% bootstrap confidence intervals} for the primary metric over questions.
+
+% ============================================================
+% 2.3 Existing Methods
+% ============================================================
+
+\subsection*{2.3 Existing Methods}
+
+Existing approaches to reduce hallucinations span several categories:
+
+\textbf{(1) Decoding-time methods.} DoLa reduces hallucinations by contrasting logits derived from different transformer layers during decoding, requiring no fine-tuning and no external retrieval; it reports substantial improvements on TruthfulQA for LLaMA-family models \citep{chuang2024dola}.
+
+\textbf{(2) Inference-time representation editing.} TruthX identifies a “truthful direction” in a learned latent space and edits internal representations during inference, improving truthfulness across multiple models \citep{zhang2024truthx}.
+
+\textbf{(3) Sampling-based verification / detection.} SelfCheckGPT detects hallucinations by generating multiple samples and measuring consistency, which can be applied in a black-box manner but increases inference cost due to repeated sampling \citep{manakul2023selfcheckgpt}.
+
+\textbf{(4) Weight editing for specific facts.} ROME edits specific factual associations stored in feed-forward layers, focusing on targeted knowledge updates rather than globally reducing hallucination propensity \citep{meng2022locating}.
+
+\textbf{(5) Directional ablation / orthogonalization (mechanistic control).} Recent mechanistic work shows that certain behaviors (e.g., refusal) can be mediated by low-dimensional directions and that surgical interventions—such as weight orthogonalization—can suppress writing to a direction \citep{arditi2024refusal}. Tools like Heretic operationalize directional ablation plus automated trade-off tuning (e.g., balancing behavior change with KL drift) \citep{heretic}.
+
+% ============================================================
+% 2.4 Limitations of Existing Methods (Motivation / Gap)
+% ============================================================
+
+\subsection*{2.4 Limitations of Existing Methods}
+
+Despite progress, hallucination and groundedness remain incompletely solved:
+
+\textbf{(i) Benchmark evidence of persistent failure.} TruthfulQA reveals systematic imitative falsehoods and shows that scaling alone does not guarantee improved truthfulness \citep{lin2022truthfulqa}.
+
+\textbf{(ii) Retrieval is not a universal fix.} Even with retrieval augmentation, groundedness can remain compromised: a significant fraction of sentences can be ungrounded across datasets and model families \citep{stolfo2024groundedness}.
+
+\textbf{(iii) Runtime overhead and integration complexity.}
+\begin{itemize}
+  \item DoLa requires decoding-time modifications and layer-contrast logic \citep{chuang2024dola}.
+  \item TruthX requires inference-time intervention hooks and additional learned components \citep{zhang2024truthx}.
+  \item SelfCheckGPT increases inference cost via multiple generations \citep{manakul2023selfcheckgpt}.
+\end{itemize}
+
+\textbf{Opportunity.} This motivates exploring whether a \textbf{one-time weight patch}—without changing decoding and without inference-time add-ons—can yield \textbf{measurable} truthfulness gains while keeping capability drift small. Rather than claiming to outperform all decoding-time or inference-time methods, our goal is to \textbf{rigorously quantify} the trade-offs between truthfulness improvements, abstention behavior, and capability drift in a deployment-friendly setting.
+
+% ============================================================
+% 2.5 Proposed Approach
+% ============================================================
+
+\subsection*{2.5 Proposed Approach}
+
+\textbf{Overview.} We propose \textbf{Hallucination Direction Ablation (HDA)}: a training-free procedure that (1) estimates a hallucination-related direction in the residual stream via contrastive prompt pairs, and (2) applies \textbf{rank-one weight orthogonalization} to prevent selected modules from writing along that direction. The method is inspired by (a) mechanistic directional control via orthogonalization \citep{arditi2024refusal} and (b) automated trade-off tuning used in practical directional ablation tools \citep{heretic}.
+
+\paragraph{Step A: Contrastive prompt pairs for calibration.}
+For each calibration question $q$, we construct two prompts:
+\begin{itemize}
+  \item \textbf{Hallucination-encouraging prompt} $P_h(q)$: nudges confident guessing under uncertainty.
+  \item \textbf{Grounded/abstain prompt} $P_g(q)$: instructs answering only when confident and abstaining otherwise.
+\end{itemize}
+We run the base model and collect residual stream activations (e.g., first generated token position) at each layer for both prompt types.
+
+\paragraph{Step B: Direction estimation.}
+For each layer $\ell$, define a hallucination direction vector:
+\[
+v_\ell = \mathbb{E}[r_\ell \mid P_h] - \mathbb{E}[r_\ell \mid P_g],
+\]
+where $r_\ell$ denotes the residual activation at layer $\ell$. This mirrors the practical “difference-of-means” direction estimation used in directional ablation pipelines \citep{heretic}.
+
+\paragraph{Step C: Rank-one weight orthogonalization (weight patch).}
+For selected layers and selected “write-to-residual” matrices $W$ (e.g., attention output projection and/or MLP output projection), we apply:
+\[
+W' \leftarrow W - \alpha_\ell \cdot \hat{v}_\ell \left(\hat{v}_\ell^\top W\right),
+\]
+where $\hat{v}_\ell$ is the unit-normalized direction and $\alpha_\ell \in [0,1]$ controls strength. This form is motivated by the idea that orthogonalizing write matrices can prevent a direction from being written into the residual stream \citep{arditi2024refusal}.
+
+\paragraph{Step D: Trade-off tuning under capability constraints.}
+We tune a small number of hyperparameters controlling which layers/modules are edited and the strength schedule (e.g., a smooth kernel over layers, as used in automated directional ablation tools \citep{heretic}). The tuning objective balances:
+\begin{itemize}
+  \item \textbf{Truthfulness improvement} on the calibration split (TruthfulQA MC accuracy), and
+  \item \textbf{Stability} via a capability-drift proxy (e.g., KL shift on benign prompts).
+\end{itemize}
+We will use a lightweight search (e.g., small grid or TPE-style optimization as in \citep{heretic}) with strict separation between calibration and held-out evaluation.
+
+\paragraph{Baselines.}
+We will compare:
+\begin{itemize}
+  \item \textbf{Base model} with standard decoding.
+  \item \textbf{DoLa} as a strong training-free baseline \citep{chuang2024dola}.
+  \item \textbf{Optional: SelfCheckGPT-style} sampling-based detection as a compute-heavier baseline if feasible \citep{manakul2023selfcheckgpt}.
+\end{itemize}
+
+\paragraph{Ablations / analysis.}
+We will include at least three of the following:
+\begin{itemize}
+  \item Module choice: attention-out only vs MLP-out only vs both.
+  \item Layer range and strength schedule: few-layer edits vs broader edits; different kernels.
+  \item Direction variants: per-layer directions vs a shared global direction; prompt-template sensitivity.
+  \item Trade-off curves: truthfulness gain vs capability drift (and abstention rate).
+\end{itemize}
+
+% ============================================================
+% 2.6 Resources and Tools
+% ============================================================
+
+\subsection*{2.6 Resources and Tools}
+
+\textbf{Compute.} Experiments will be run on a local 16GB VRAM GPU, with optional use of Colab Pro for parallel sweeps and/or faster evaluation.
+
+\textbf{Software stack.} PyTorch + Hugging Face Transformers for model access and hooks; evaluation scripts for TruthfulQA; an optimizer/search tool (e.g., Optuna-style TPE or a structured grid) to tune the HDA strength schedule and edited components, following the general approach used by Heretic for automated trade-off selection \citep{heretic}.
+
+\textbf{Model choice.} We will use a 7B/8B-class open-source instruction-tuned LLM (e.g., a LLaMA-2-7B-Chat–class or Mistral-7B-Instruct–class model) with quantized inference if needed to fit memory constraints.
+
+% ============================================================
+% 2.7 Key Deliverables (Conservative / Robust)
+% ============================================================
+
+\subsection*{2.7 Key Deliverables}
+
+\textbf{(1) Reproducible end-to-end pipeline (code + documentation).}
+A public codebase with scripts for: data processing, activation collection, direction estimation, weight patching, evaluation, and plotting; plus a README enabling end-to-end reproduction.
+
+\textbf{(2) Primary empirical result with uncertainty reporting.}
+TruthfulQA multiple-choice performance for:
+\begin{itemize}
+  \item Base model (standard decoding), and
+  \item HDA-patched model (same decoding as base),
+\end{itemize}
+reported on a held-out split with \textbf{95\% bootstrap confidence intervals} over questions. TruthfulQA is explicitly designed to probe imitative falsehoods and quantify truthfulness gaps \citep{lin2022truthfulqa}.
+
+\textbf{(3) Strong baseline comparison under a clear cost model.}
+Comparison against at least one strong baseline (DoLa) \citep{chuang2024dola}, reported alongside a clear cost model:
+\begin{itemize}
+  \item HDA: one-time weight patch; \textbf{no decoding modification} and \textbf{no inference-time intervention}.
+  \item DoLa: decoding-time layer-contrast strategy.
+\end{itemize}
+Results will be presented as “truthfulness vs inference complexity” trade-offs.
+
+\textbf{(4) Trade-off characterization beyond abstention.}
+We will report abstention rate and a capability-drift proxy (e.g., KL shift on benign prompts and/or a small sanity suite). This aligns with the principle of controlling behavioral changes while limiting distributional drift, as used in automated directional ablation tooling \citep{heretic}.
+
+\textbf{(5) Ablation studies.}
+At least three ablations isolating which components (modules, layers, direction definitions) drive gains or regressions.
+
+\textbf{(6) Failure-case analysis (negative results still informative).}
+If HDA does not surpass strong baselines, we will still deliver a careful error analysis and empirical evidence about whether a low-dimensional hallucination direction exists and is sufficiently stable for weight-orthogonalization control—analogous in spirit to single-direction behavior mediation results shown for refusal \citep{arditi2024refusal}.
+
+% ============================================================
+% References (NeurIPS-style via natbib)
+% ============================================================
+
+\bibliographystyle{plainnat}
+\bibliography{references}
