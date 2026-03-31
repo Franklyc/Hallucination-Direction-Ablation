@@ -35,6 +35,12 @@ def parse_args():
     )
     parser.add_argument("--dtype", default="bfloat16", help="Model dtype")
     parser.add_argument(
+        "--gpu-memory-gb",
+        type=int,
+        default=15,
+        help="Per-GPU memory cap in GiB for model loading",
+    )
+    parser.add_argument(
         "--load-in-4bit",
         action="store_true",
         help="Load model with bitsandbytes 4-bit quantization",
@@ -88,6 +94,7 @@ def main():
         args.model,
         args.dtype,
         load_in_4bit=args.load_in_4bit,
+        max_gpu_memory_gb=args.gpu_memory_gb,
     )
     device = get_primary_device(model)
     cand_a, cand_b = get_binary_letter_candidates(args.candidate_prefix)
@@ -144,6 +151,7 @@ def main():
         "model": args.model,
         "dtype": args.dtype,
         "load_in_4bit": args.load_in_4bit,
+        "gpu_memory_gb": args.gpu_memory_gb,
         "candidate_prefix": args.candidate_prefix,
         "seed": args.seed,
         "n_eval": len(eval_items),

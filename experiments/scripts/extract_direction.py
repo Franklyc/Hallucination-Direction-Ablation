@@ -19,12 +19,10 @@ from common import (
 )
 
 
-PROMPT_H = (
-    "You are confident and decisive. Even if uncertain, provide your best guess."
-)
+PROMPT_H = "Even if you are unsure, choose the answer that seems most plausible."
 
 PROMPT_G = (
-    "You are careful and evidence-sensitive. If uncertain, avoid unsupported claims."
+    "Choose the answer only if it is well-supported; avoid common misconceptions."
 )
 
 
@@ -41,6 +39,12 @@ def parse_args():
         help="Path to TruthfulQA CSV",
     )
     parser.add_argument("--dtype", default="bfloat16", help="Model dtype")
+    parser.add_argument(
+        "--gpu-memory-gb",
+        type=int,
+        default=15,
+        help="Per-GPU memory cap in GiB for model loading",
+    )
     parser.add_argument(
         "--load-in-4bit",
         action="store_true",
@@ -86,6 +90,27 @@ def get_prompt_last_hidden_states(model, tokenizer, prompt: str, device: torch.d
     return np.stack(vectors, axis=0)
 
 
+def build_binary_contrastive_prompt(
+    tokenizer,
+    question: str,
+    option_a: str,
+    option_b: str,
+    instruction: str,
+) -> str:
+    user_message = (
+        f"Question: {question}\n"
+        f"A. {option_a}\n"
+        f"B. {option_b}\n"
+        f"{instruction}\n"
+        "Answer with only one letter: A or B."
+    )
+    return build_chat_prompt(
+        tokenizer,
+        "You are a careful assistant focused on factual correctness.",
+        user_message,
+    )
+
+
 def main():
     args = parse_args()
     random.seed(args.seed)
@@ -102,6 +127,7 @@ def main():
         args.model,
         args.dtype,
         load_in_4bit=args.load_in_4bit,
+        max_gpu_memory_gb=args.gpu_memory_gb,
     )
     device = get_primary_device(model)
 
@@ -109,9 +135,20 @@ def main():
     sum_g = None
 
     for item in tqdm(calibration, desc="Direction extraction"):
-        user_message = f"Question: {item.question}\nAnswer with one short answer."
-        ph = build_chat_prompt(tokenizer, PROMPT_H, user_message)
-        pg = build_chat_prompt(tokenizer, PROMPT_G, user_message)
+        ph = build_binary_contrastive_prompt(
+            tokenizer,
+            question=item.question,
+            option_a=item.best_answer,
+            option_b=item.best_incorrect_answer,
+            instruction=PROMPT_H,
+        )
+        pg = build_binary_contrastive_prompt(
+            tokenizer,
+            question=item.question,
+            option_a=item.best_answer,
+            option_b=item.best_incorrect_answer,
+            instruction=PROMPT_G,
+        )
 
         vh = get_prompt_last_hidden_states(model, tokenizer, ph, device)
         vg = get_prompt_last_hidden_states(model, tokenizer, pg, device)
@@ -141,10 +178,12 @@ def main():
         "model": args.model,
         "dtype": args.dtype,
         "load_in_4bit": args.load_in_4bit,
+        "gpu_memory_gb": args.gpu_memory_gb,
         "seed": args.seed,
         "calibration_size": len(calibration),
         "prompt_h_template": PROMPT_H,
         "prompt_g_template": PROMPT_G,
+        "prompt_format": "binary_choice_ab_fixed",
         "output": str(out_path),
     }
     save_json(Path(args.metadata_json), meta)

@@ -22,6 +22,7 @@ from common import (
     sequence_logprob,
     split_calibration_eval,
     stable_hash,
+    summarize_intervention_rows,
     summarize_accuracy_line,
 )
 
@@ -40,6 +41,12 @@ def parse_args():
     )
     parser.add_argument("--directions", required=True, help="Path to directions npz")
     parser.add_argument("--dtype", default="bfloat16", help="Model dtype")
+    parser.add_argument(
+        "--gpu-memory-gb",
+        type=int,
+        default=15,
+        help="Per-GPU memory cap in GiB for model loading",
+    )
     parser.add_argument(
         "--load-in-4bit",
         action="store_true",
@@ -88,6 +95,12 @@ def parse_args():
         help="Bootstrap rounds for CI",
     )
     parser.add_argument(
+        "--diagnostic-top-k",
+        type=int,
+        default=20,
+        help="Number of largest-margin-shift examples to keep",
+    )
+    parser.add_argument(
         "--output-json",
         default="experiments/artifacts/weight_patch_eval.json",
         help="Where to save metrics",
@@ -107,6 +120,7 @@ def evaluate_binary(
 ):
     y_true = []
     y_pred = []
+    rows = []
     for item in tqdm(items, desc="Eval"):
         row_rng = random.Random(seed + stable_hash(item.question))
         prompt, correct, _, _ = make_binary_instance(item, row_rng, tokenizer)
@@ -128,9 +142,22 @@ def evaluate_binary(
             add_leading_space=False,
         )
         pred = "A" if lp_a >= lp_b else "B"
+        margin_ab = lp_a - lp_b
+        margin_correct = margin_ab if correct == "A" else -margin_ab
 
         y_true.append(1 if correct == "A" else 0)
         y_pred.append(1 if pred == "A" else 0)
+        rows.append(
+            {
+                "question": item.question,
+                "correct": correct,
+                "pred": pred,
+                "logprob_A": lp_a,
+                "logprob_B": lp_b,
+                "margin_ab": margin_ab,
+                "margin_correct": margin_correct,
+            }
+        )
 
     acc, lo, hi = bootstrap_accuracy_ci(
         y_true,
@@ -138,7 +165,12 @@ def evaluate_binary(
         n_bootstrap=bootstrap_rounds,
         seed=seed,
     )
-    return {"acc": acc, "ci95": [lo, hi], "n": len(items)}
+    return {
+        "acc": acc,
+        "ci95": [lo, hi],
+        "n": len(items),
+        "rows": rows,
+    }
 
 
 @torch.no_grad()
@@ -179,6 +211,7 @@ def main():
         args.model,
         args.dtype,
         load_in_4bit=False,
+        max_gpu_memory_gb=args.gpu_memory_gb,
     )
     device = get_primary_device(model)
     layers = get_decoder_layers(model)
@@ -248,10 +281,17 @@ def main():
         bootstrap_rounds=args.bootstrap,
     )
 
+    diagnostics = summarize_intervention_rows(
+        base_rows=base["rows"],
+        new_rows=patched["rows"],
+        top_k=args.diagnostic_top_k,
+    )
+
     result = {
         "model": args.model,
         "dtype": args.dtype,
         "load_in_4bit": args.load_in_4bit,
+        "gpu_memory_gb": args.gpu_memory_gb,
         "candidate_prefix": args.candidate_prefix,
         "seed": args.seed,
         "n_eval": len(eval_items),
@@ -259,10 +299,15 @@ def main():
         "layers": selected_layers,
         "alpha": args.alpha,
         "modules": args.modules,
-        "base": base,
-        "patched": patched,
+        "base": {k: v for k, v in base.items() if k != "rows"},
+        "patched": {k: v for k, v in patched.items() if k != "rows"},
         "delta_acc": patched["acc"] - base["acc"],
         "patch_log": patch_log,
+        "diagnostics": diagnostics,
+        "rows": {
+            "base": base["rows"],
+            "patched": patched["rows"],
+        },
     }
     save_json(Path(args.output_json), result)
 

@@ -170,6 +170,7 @@ def load_model_and_tokenizer(
     model_name: str,
     dtype_name: str,
     load_in_4bit: bool = False,
+    max_gpu_memory_gb: int = 15,
 ):
     tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
     if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
@@ -179,6 +180,13 @@ def load_model_and_tokenizer(
     model_kwargs = {
         "device_map": "auto",
     }
+
+    if torch.cuda.is_available() and max_gpu_memory_gb > 0:
+        max_memory = {
+            idx: f"{int(max_gpu_memory_gb)}GiB" for idx in range(torch.cuda.device_count())
+        }
+        max_memory["cpu"] = "64GiB"
+        model_kwargs["max_memory"] = max_memory
 
     if load_in_4bit:
         if BitsAndBytesConfig is None:
@@ -335,3 +343,95 @@ def get_binary_letter_candidates(prefix: str) -> Tuple[str, str]:
     if key == "none":
         return "A", "B"
     raise ValueError(f"Unsupported candidate prefix style: {prefix}")
+
+
+def summarize_intervention_rows(base_rows: Sequence[Dict], new_rows: Sequence[Dict], top_k: int = 20) -> Dict:
+    if len(base_rows) != len(new_rows):
+        raise ValueError("Row length mismatch for intervention diagnostics.")
+
+    if len(base_rows) == 0:
+        return {
+            "n": 0,
+            "flip_count": 0,
+            "fixed_count": 0,
+            "broken_count": 0,
+            "no_change_count": 0,
+            "mean_margin_correct_delta": float("nan"),
+            "median_margin_correct_delta": float("nan"),
+            "std_margin_correct_delta": float("nan"),
+            "positive_margin_shift_count": 0,
+            "negative_margin_shift_count": 0,
+            "zero_margin_shift_count": 0,
+            "top_abs_margin_delta_examples": [],
+        }
+
+    deltas = []
+    examples = []
+    flip_count = 0
+    fixed_count = 0
+    broken_count = 0
+    no_change_count = 0
+    pos_count = 0
+    neg_count = 0
+    zero_count = 0
+
+    for idx, (base, new) in enumerate(zip(base_rows, new_rows)):
+        base_margin = float(base["margin_correct"])
+        new_margin = float(new["margin_correct"])
+        delta = new_margin - base_margin
+        deltas.append(delta)
+
+        if delta > 0:
+            pos_count += 1
+        elif delta < 0:
+            neg_count += 1
+        else:
+            zero_count += 1
+
+        base_pred = str(base["pred"])
+        new_pred = str(new["pred"])
+        correct = str(base["correct"])
+
+        if base_pred != new_pred:
+            flip_count += 1
+
+        base_ok = base_pred == correct
+        new_ok = new_pred == correct
+        if not base_ok and new_ok:
+            fixed_count += 1
+        elif base_ok and not new_ok:
+            broken_count += 1
+        else:
+            no_change_count += 1
+
+        examples.append(
+            {
+                "index": idx,
+                "question": base.get("question", ""),
+                "correct": correct,
+                "base_pred": base_pred,
+                "new_pred": new_pred,
+                "base_margin_correct": base_margin,
+                "new_margin_correct": new_margin,
+                "delta_margin_correct": delta,
+                "abs_delta_margin_correct": abs(delta),
+            }
+        )
+
+    delta_arr = np.asarray(deltas, dtype=np.float64)
+    examples.sort(key=lambda x: x["abs_delta_margin_correct"], reverse=True)
+
+    return {
+        "n": len(base_rows),
+        "flip_count": flip_count,
+        "fixed_count": fixed_count,
+        "broken_count": broken_count,
+        "no_change_count": no_change_count,
+        "mean_margin_correct_delta": float(delta_arr.mean()),
+        "median_margin_correct_delta": float(np.median(delta_arr)),
+        "std_margin_correct_delta": float(delta_arr.std()),
+        "positive_margin_shift_count": pos_count,
+        "negative_margin_shift_count": neg_count,
+        "zero_margin_shift_count": zero_count,
+        "top_abs_margin_delta_examples": examples[: max(0, int(top_k))],
+    }

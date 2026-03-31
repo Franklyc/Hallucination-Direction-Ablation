@@ -22,6 +22,7 @@ from common import (
     save_json,
     split_calibration_eval,
     stable_hash,
+    summarize_intervention_rows,
     summarize_accuracy_line,
 )
 
@@ -40,6 +41,12 @@ def parse_args():
     )
     parser.add_argument("--directions", required=True, help="Path to directions npz")
     parser.add_argument("--dtype", default="bfloat16", help="Model dtype")
+    parser.add_argument(
+        "--gpu-memory-gb",
+        type=int,
+        default=15,
+        help="Per-GPU memory cap in GiB for model loading",
+    )
     parser.add_argument(
         "--load-in-4bit",
         action="store_true",
@@ -80,6 +87,12 @@ def parse_args():
         type=int,
         default=1000,
         help="Bootstrap rounds for CI",
+    )
+    parser.add_argument(
+        "--diagnostic-top-k",
+        type=int,
+        default=20,
+        help="Number of largest-margin-shift examples to keep",
     )
     parser.add_argument(
         "--output-json",
@@ -164,6 +177,7 @@ def evaluate(
 ) -> Dict:
     y_true = []
     y_pred = []
+    rows = []
 
     for item in tqdm(items, desc="Eval"):
         row_rng = random.Random(seed + stable_hash(item.question))
@@ -188,9 +202,22 @@ def evaluate(
             add_leading_space=False,
         )
         pred = "A" if lp_a >= lp_b else "B"
+        margin_ab = lp_a - lp_b
+        margin_correct = margin_ab if correct == "A" else -margin_ab
 
         y_true.append(1 if correct == "A" else 0)
         y_pred.append(1 if pred == "A" else 0)
+        rows.append(
+            {
+                "question": item.question,
+                "correct": correct,
+                "pred": pred,
+                "logprob_A": lp_a,
+                "logprob_B": lp_b,
+                "margin_ab": margin_ab,
+                "margin_correct": margin_correct,
+            }
+        )
 
     context.prompt_len = 0
     acc, lo, hi = bootstrap_accuracy_ci(
@@ -205,6 +232,7 @@ def evaluate(
         "n": len(items),
         "y_true": y_true,
         "y_pred": y_pred,
+        "rows": rows,
     }
 
 
@@ -230,6 +258,7 @@ def main():
         args.model,
         args.dtype,
         load_in_4bit=args.load_in_4bit,
+        max_gpu_memory_gb=args.gpu_memory_gb,
     )
     device = get_primary_device(model)
     layers = get_decoder_layers(model)
@@ -283,21 +312,31 @@ def main():
     for h in hook_handles:
         h.remove()
 
+    diagnostics = summarize_intervention_rows(
+        base_rows=base["rows"],
+        new_rows=intervened["rows"],
+        top_k=args.diagnostic_top_k,
+    )
+
     result = {
         "model": args.model,
         "dtype": args.dtype,
         "load_in_4bit": args.load_in_4bit,
+        "gpu_memory_gb": args.gpu_memory_gb,
         "candidate_prefix": args.candidate_prefix,
         "seed": args.seed,
         "n_eval": len(eval_items),
         "directions": args.directions,
         "layers": selected_layers,
         "beta": args.beta,
-        "base": {k: v for k, v in base.items() if k not in {"y_true", "y_pred"}},
-        "intervened": {
-            k: v for k, v in intervened.items() if k not in {"y_true", "y_pred"}
-        },
+        "base": {k: v for k, v in base.items() if k not in {"y_true", "y_pred", "rows"}},
+        "intervened": {k: v for k, v in intervened.items() if k not in {"y_true", "y_pred", "rows"}},
         "delta_acc": intervened["acc"] - base["acc"],
+        "diagnostics": diagnostics,
+        "rows": {
+            "base": base["rows"],
+            "intervened": intervened["rows"],
+        },
     }
     save_json(Path(args.output_json), result)
 
