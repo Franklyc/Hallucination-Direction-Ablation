@@ -22,6 +22,7 @@ from common import (
     sequence_logprob,
     split_calibration_eval,
     stable_hash,
+    summarize_category_accuracy,
     summarize_intervention_rows,
     summarize_accuracy_line,
 )
@@ -149,6 +150,7 @@ def evaluate_binary(
         y_pred.append(1 if pred == "A" else 0)
         rows.append(
             {
+                "category": item.category,
                 "question": item.question,
                 "correct": correct,
                 "pred": pred,
@@ -169,6 +171,7 @@ def evaluate_binary(
         "acc": acc,
         "ci95": [lo, hi],
         "n": len(items),
+        "category_accuracy": summarize_category_accuracy(rows),
         "rows": rows,
     }
 

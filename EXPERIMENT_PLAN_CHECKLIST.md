@@ -12,55 +12,58 @@
 - [x] Run automatic quality checks (integrity, label consistency, prompt linting, deduplication).
 
 ## 1) Baseline Evaluation (Deterministic Binary Choice)
-- [ ] Run full baseline evaluation on `eval_binary` with Qwen3-4B (4-bit).
-- [ ] Sweep candidate token prefix style (`space`, `newline`, `none`) and select one fixed protocol.
-- [ ] Record baseline accuracy and 95% bootstrap confidence interval.
-- [ ] Save baseline artifacts and a short findings note.
+- [x] Run full baseline evaluation on `eval_binary` with Qwen3-4B (4-bit).
+- [x] Sweep candidate token prefix style (`space`, `newline`, `none`) and select one fixed protocol.
+- [x] Record baseline accuracy and 95% bootstrap confidence interval.
+- [x] Save baseline artifacts and a short findings note.
 
 ## 2) Direction Extraction
-- [ ] Use `calib_contrastive` to extract layer-wise directions:
-  - [ ] `v_l = mean(h_l | P_h) - mean(h_l | P_g)`
-- [ ] Save direction vectors and metadata.
-- [ ] Compute per-layer direction norms.
-- [ ] Compute inter-layer cosine similarity summary.
-- [ ] Create one visualization for layer-wise direction strength.
+- [x] Use `calib_contrastive` to extract layer-wise directions:
+  - [x] `v_l = mean(h_l | P_h) - mean(h_l | P_g)`
+- [x] Save direction vectors and metadata.
+- [x] Compute per-layer direction norms.
+- [x] Compute inter-layer cosine similarity summary.
+- [x] Create one visualization for layer-wise direction strength.
 
 ## 3) Activation Probe (Causal Signal Check)
-- [ ] Run projection-removal probe:
-  - [ ] `h' = h - beta * (h dot v_hat) * v_hat`
-- [ ] Test middle and late layers first (single-layer runs).
-- [ ] Run a small beta grid (e.g., `0.25, 0.5, 0.75, 1.0`).
-- [ ] Compare base vs probe accuracy and logit deltas.
-- [ ] Select top 1-3 effective layers for permanent patch.
+- [x] Run projection-removal probe:
+  - [x] `h' = h - beta * (h dot v_hat) * v_hat`
+- [x] Test middle and late layers first (single-layer runs).
+- [x] Run a small beta grid and extend it to the useful range discovered empirically.
+- [x] Compare base vs probe accuracy and logit deltas.
+- [x] Select top 1-3 effective layers for permanent patch.
 
 ## 4) Minimal Weight Patch (Permanent Edit)
-- [ ] Switch to non-quantized weights for patching (BF16 recommended).
-- [ ] Patch attention output projection only (minimal scope).
-- [ ] Apply rank-one orthogonalization:
-  - [ ] `W' = W - alpha * v_hat * (v_hat^T W)`
-- [ ] Run a small alpha grid (e.g., `0.1, 0.25, 0.5`).
-- [ ] Re-evaluate on `eval_binary` and compare against baseline.
+- [x] Switch to non-quantized weights for patching (BF16 recommended).
+- [x] Patch attention output projection only (minimal scope).
+- [x] Apply rank-one orthogonalization:
+  - [x] `W' = W - alpha * v_hat * (v_hat^T W)`
+- [x] Run a small alpha grid and extend to stronger values where informative.
+- [x] Re-evaluate on `eval_binary` and compare against baseline.
 
 ## 5) Capability Drift and Safety Checks
-- [ ] Evaluate on `drift_benign` prompts.
-- [ ] Measure a preliminary capability-drift proxy (e.g., next-token KL or output divergence).
-- [ ] Track abstention/refusal tendency changes.
-- [ ] Summarize trade-off: truthfulness gain vs drift.
+- [x] Evaluate on `drift_benign` prompts.
+- [x] Measure a preliminary capability-drift proxy (string similarity / output divergence surrogate).
+- [x] Track abstention/refusal tendency changes.
+- [x] Summarize trade-off: truthfulness gain vs drift.
 
 ## 6) Milestone Reporting Package
-- [ ] Prepare one results table:
-  - [ ] Baseline
-  - [ ] Activation probe (best setting)
-  - [ ] Weight patch (best setting)
-- [ ] Prepare one figure for layer/beta analysis.
-- [ ] Prepare one figure or table for drift proxy.
-- [ ] Write a concise milestone narrative:
-  - [ ] What was implemented
-  - [ ] What improved
-  - [ ] What remains for final comparison (e.g., DoLa as planned baseline)
+- [x] Prepare one results table:
+  - [x] Baseline
+  - [x] Activation probe (best setting)
+  - [x] Weight patch (best setting)
+- [x] Prepare one figure for layer/beta analysis.
+- [x] Prepare one figure or table for drift proxy.
+- [x] Write a concise milestone narrative:
+  - [x] What was implemented
+  - [x] What improved
+  - [x] What remains for final comparison (e.g., DoLa as planned baseline)
+
+## 6.1) Remaining Proposal Comparison
+- [ ] Run DoLa as a planned comparison baseline if a compatible implementation/model path is available.
 
 ## 7) Stretch Goals (Only If Time Permits)
-- [ ] Add module ablation (`attn` vs `mlp` vs `both`).
-- [ ] Add direction variant ablation (layer-wise vs shared/global direction).
-- [ ] Expand calibration size sensitivity analysis.
-- [ ] Add a second seed run for robustness.
+- [x] Add module ablation (`attn` vs `mlp` vs `both`).
+- [x] Add direction variant ablation (task-aligned vs original direction file).
+- [x] Expand calibration size sensitivity analysis.
+- [x] Add a second seed run for robustness.

@@ -15,6 +15,7 @@ from common import (
     get_primary_device,
     load_model_and_tokenizer,
     parse_int_list,
+    resolve_intervention_index,
     save_json,
 )
 
@@ -54,6 +55,12 @@ def parse_args():
         type=float,
         default=1.0,
         help="Projection removal strength",
+    )
+    parser.add_argument(
+        "--hook-position",
+        default="prompt_last_token",
+        choices=["prompt_last_token", "first_answer_token"],
+        help="Which token position to edit inside the sequence",
     )
     parser.add_argument(
         "--max-new-tokens",
@@ -98,7 +105,7 @@ def load_prompts(path: Path, max_samples: int) -> List[dict]:
     return rows
 
 
-def make_projection_hook(v: torch.Tensor, beta: float, ctx: ProbeContext):
+def make_projection_hook(v: torch.Tensor, beta: float, ctx: ProbeContext, hook_position: str):
     def _hook(_module, _inputs, output):
         if ctx.prompt_len <= 0:
             return output
@@ -108,10 +115,9 @@ def make_projection_hook(v: torch.Tensor, beta: float, ctx: ProbeContext):
         def _edit(hidden: torch.Tensor) -> torch.Tensor:
             if hidden.size(1) <= 0:
                 return hidden
-            # Only edit when full prompt context is present.
-            if hidden.size(1) < ctx.prompt_len:
+            idx = resolve_intervention_index(ctx.prompt_len, hidden.size(1), hook_position)
+            if idx is None:
                 return hidden
-            idx = min(ctx.prompt_len - 1, hidden.size(1) - 1)
             edited = hidden.clone()
             token_vec = edited[:, idx, :]
 
@@ -129,7 +135,15 @@ def make_projection_hook(v: torch.Tensor, beta: float, ctx: ProbeContext):
     return _hook
 
 
-def generate_text(model, tokenizer, device: torch.device, prompt: str, max_new_tokens: int, ctx: ProbeContext) -> str:
+def generate_text(
+    model,
+    tokenizer,
+    device: torch.device,
+    prompt: str,
+    max_new_tokens: int,
+    ctx: ProbeContext,
+    use_cache: bool,
+) -> str:
     encoded = tokenizer(prompt, return_tensors="pt", add_special_tokens=False)
     encoded = {k: v.to(device) for k, v in encoded.items()}
     prompt_len = encoded["input_ids"].shape[1]
@@ -141,7 +155,7 @@ def generate_text(model, tokenizer, device: torch.device, prompt: str, max_new_t
             **encoded,
             max_new_tokens=max_new_tokens,
             do_sample=False,
-            use_cache=True,
+            use_cache=use_cache,
             pad_token_id=tokenizer.eos_token_id,
             eos_token_id=tokenizer.eos_token_id,
         )
@@ -191,6 +205,7 @@ def main():
             )
 
     context = ProbeContext(prompt_len=0)
+    use_cache = args.hook_position != "first_answer_token"
     hook_handles = []
     for layer_idx in selected_layers:
         v_np = directions[layer_idx]
@@ -199,7 +214,7 @@ def main():
             continue
         v = torch.tensor(v_np / norm, dtype=torch.float32)
         handle = layers[layer_idx].register_forward_hook(
-            make_projection_hook(v=v, beta=args.beta, ctx=context)
+            make_projection_hook(v=v, beta=args.beta, ctx=context, hook_position=args.hook_position)
         )
         hook_handles.append(handle)
 
@@ -222,6 +237,7 @@ def main():
             prompt,
             max_new_tokens=args.max_new_tokens,
             ctx=context,
+            use_cache=use_cache,
         )
 
         for layer_idx in selected_layers:
@@ -231,7 +247,7 @@ def main():
                 continue
             v = torch.tensor(v_np / norm, dtype=torch.float32)
             handle = layers[layer_idx].register_forward_hook(
-                make_projection_hook(v=v, beta=args.beta, ctx=context)
+                make_projection_hook(v=v, beta=args.beta, ctx=context, hook_position=args.hook_position)
             )
             hook_handles.append(handle)
 
@@ -242,6 +258,7 @@ def main():
             prompt,
             max_new_tokens=args.max_new_tokens,
             ctx=context,
+            use_cache=use_cache,
         )
 
         ratio = float(SequenceMatcher(None, base_text, probe_text).ratio())
@@ -290,6 +307,8 @@ def main():
         "directions": args.directions,
         "layers": selected_layers,
         "beta": args.beta,
+        "hook_position": args.hook_position,
+        "use_cache": use_cache,
         "drift_jsonl": args.drift_jsonl,
         "max_new_tokens": args.max_new_tokens,
         "summary": summary,

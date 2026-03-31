@@ -17,6 +17,7 @@ from common import (
     sequence_logprob,
     split_calibration_eval,
     stable_hash,
+    summarize_category_accuracy,
     summarize_accuracy_line,
 )
 
@@ -130,6 +131,7 @@ def main():
 
         rows.append(
             {
+                "category": item.category,
                 "question": item.question,
                 "correct": correct,
                 "pred": pred,
@@ -158,6 +160,7 @@ def main():
         "calibration_size": args.calibration_size,
         "accuracy": acc,
         "ci95": [lo, hi],
+        "category_accuracy": summarize_category_accuracy(rows),
         "rows": rows,
     }
 

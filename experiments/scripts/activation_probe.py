@@ -19,9 +19,11 @@ from common import (
     make_binary_instance,
     maybe_cap_items,
     parse_int_list,
+    resolve_intervention_index,
     save_json,
     split_calibration_eval,
     stable_hash,
+    summarize_category_accuracy,
     summarize_intervention_rows,
     summarize_accuracy_line,
 )
@@ -83,6 +85,12 @@ def parse_args():
         help="Projection removal strength",
     )
     parser.add_argument(
+        "--hook-position",
+        default="prompt_last_token",
+        choices=["prompt_last_token", "first_answer_token"],
+        help="Which token position to edit inside the sequence",
+    )
+    parser.add_argument(
         "--bootstrap",
         type=int,
         default=1000,
@@ -139,7 +147,7 @@ def sequence_logprob_with_hooks(
     return float(gathered[0, start:end].sum().item())
 
 
-def make_projection_hook(v: torch.Tensor, beta: float, ctx: ProbeContext):
+def make_projection_hook(v: torch.Tensor, beta: float, ctx: ProbeContext, hook_position: str):
     def _hook(_module, _inputs, output):
         if ctx.prompt_len <= 0:
             return output
@@ -147,7 +155,9 @@ def make_projection_hook(v: torch.Tensor, beta: float, ctx: ProbeContext):
         def _edit(hidden: torch.Tensor) -> torch.Tensor:
             if hidden.size(1) <= 0:
                 return hidden
-            idx = min(ctx.prompt_len - 1, hidden.size(1) - 1)
+            idx = resolve_intervention_index(ctx.prompt_len, hidden.size(1), hook_position)
+            if idx is None:
+                return hidden
             edited = hidden.clone()
             token_vec = edited[:, idx, :]
 
@@ -209,6 +219,7 @@ def evaluate(
         y_pred.append(1 if pred == "A" else 0)
         rows.append(
             {
+                "category": item.category,
                 "question": item.question,
                 "correct": correct,
                 "pred": pred,
@@ -230,6 +241,7 @@ def evaluate(
         "acc": acc,
         "ci95": [lo, hi],
         "n": len(items),
+        "category_accuracy": summarize_category_accuracy(rows),
         "y_true": y_true,
         "y_pred": y_pred,
         "rows": rows,
@@ -293,7 +305,7 @@ def main():
             continue
         v = torch.tensor(v_np / norm, dtype=torch.float32)
         handle = layers[layer_idx].register_forward_hook(
-            make_projection_hook(v=v, beta=args.beta, ctx=context)
+            make_projection_hook(v=v, beta=args.beta, ctx=context, hook_position=args.hook_position)
         )
         hook_handles.append(handle)
 
@@ -329,6 +341,7 @@ def main():
         "directions": args.directions,
         "layers": selected_layers,
         "beta": args.beta,
+        "hook_position": args.hook_position,
         "base": {k: v for k, v in base.items() if k not in {"y_true", "y_pred", "rows"}},
         "intervened": {k: v for k, v in intervened.items() if k not in {"y_true", "y_pred", "rows"}},
         "delta_acc": intervened["acc"] - base["acc"],

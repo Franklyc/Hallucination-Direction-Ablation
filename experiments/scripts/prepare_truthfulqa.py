@@ -122,6 +122,24 @@ def _normalize_text(value) -> str:
     return str(value).strip()
 
 
+def _split_answer_variants(raw: str) -> List[str]:
+    text = _normalize_text(raw)
+    if not text:
+        return []
+    values = []
+    seen = set()
+    for part in text.split(";"):
+        value = part.strip()
+        if not value:
+            continue
+        key = value.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        values.append(value)
+    return values
+
+
 def load_source_questions(csv_path: Path) -> List[Dict]:
     df = pd.read_csv(csv_path)
     records = []
@@ -130,6 +148,8 @@ def load_source_questions(csv_path: Path) -> List[Dict]:
         best_answer = _normalize_text(row.get("Best Answer"))
         best_incorrect = _normalize_text(row.get("Best Incorrect Answer"))
         category = _normalize_text(row.get("Category"))
+        correct_answers = _split_answer_variants(row.get("Correct Answers"))
+        incorrect_answers = _split_answer_variants(row.get("Incorrect Answers"))
 
         if not question or not best_answer or not best_incorrect:
             continue
@@ -141,6 +161,8 @@ def load_source_questions(csv_path: Path) -> List[Dict]:
                 "question": question,
                 "best_answer": best_answer,
                 "best_incorrect_answer": best_incorrect,
+                "correct_answers": [best_answer, *[x for x in correct_answers if x != best_answer]],
+                "incorrect_answers": [best_incorrect, *[x for x in incorrect_answers if x != best_incorrect]],
             }
         )
     return records
@@ -227,6 +249,8 @@ def build_eval_binary(questions: List[Dict], calibration_qids: set, seed: int) -
                 "question": q["question"],
                 "best_answer": q["best_answer"],
                 "best_incorrect_answer": q["best_incorrect_answer"],
+                "correct_answers": q["correct_answers"],
+                "incorrect_answers": q["incorrect_answers"],
                 "answer_order": order,
                 "option_A": option_a,
                 "option_B": option_b,
@@ -270,6 +294,8 @@ def build_calib_contrastive(eval_rows: List[Dict]) -> List[Dict]:
                             "question": row["question"],
                             "correct_answer": row["best_answer"],
                             "incorrect_answer": row["best_incorrect_answer"],
+                            "correct_answers": row["correct_answers"],
+                            "incorrect_answers": row["incorrect_answers"],
                             "answer_order": order,
                             "option_A": option_a,
                             "option_B": option_b,

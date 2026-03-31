@@ -1,8 +1,10 @@
 import csv
 import json
+import math
 import random
 import urllib.request
-from dataclasses import dataclass
+from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
 
@@ -27,6 +29,9 @@ class BinaryQAItem:
     best_answer: str
     best_incorrect_answer: str
     source_row: int
+    category: str = "Unknown"
+    correct_answers: List[str] = field(default_factory=list)
+    incorrect_answers: List[str] = field(default_factory=list)
 
 
 def ensure_parent_dir(path: Path) -> None:
@@ -60,6 +65,38 @@ def _pick_first_non_empty(row: Dict[str, str], candidates: Sequence[str]) -> str
     return ""
 
 
+def _split_answer_variants(raw: str) -> List[str]:
+    if not raw:
+        return []
+    values = []
+    seen = set()
+    for part in raw.split(";"):
+        value = part.strip()
+        if not value:
+            continue
+        key = value.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        values.append(value)
+    return values
+
+
+def _merge_answer_variants(primary: str, variants: Sequence[str]) -> List[str]:
+    merged = []
+    seen = set()
+    for value in [primary, *variants]:
+        value = (value or "").strip()
+        if not value:
+            continue
+        key = value.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(value)
+    return merged
+
+
 def load_truthfulqa_binary_items(csv_path: Path) -> List[BinaryQAItem]:
     items: List[BinaryQAItem] = []
     with csv_path.open("r", encoding="utf-8", newline="") as f:
@@ -84,6 +121,13 @@ def load_truthfulqa_binary_items(csv_path: Path) -> List[BinaryQAItem]:
                     "Incorrect Answer",
                 ],
             )
+            category = _pick_first_non_empty(row, ["Category", "category"]) or "Unknown"
+            correct_answers = _split_answer_variants(
+                _pick_first_non_empty(row, ["Correct Answers", "correct_answers"])
+            )
+            incorrect_answers = _split_answer_variants(
+                _pick_first_non_empty(row, ["Incorrect Answers", "incorrect_answers"])
+            )
 
             if not question or not best_answer or not best_incorrect_answer:
                 continue
@@ -94,6 +138,9 @@ def load_truthfulqa_binary_items(csv_path: Path) -> List[BinaryQAItem]:
                     best_answer=best_answer,
                     best_incorrect_answer=best_incorrect_answer,
                     source_row=idx,
+                    category=category,
+                    correct_answers=_merge_answer_variants(best_answer, correct_answers),
+                    incorrect_answers=_merge_answer_variants(best_incorrect_answer, incorrect_answers),
                 )
             )
 
@@ -108,11 +155,44 @@ def split_calibration_eval(
     if calibration_size <= 0:
         return [], list(items)
 
-    rng = random.Random(seed)
-    idxs = list(range(len(items)))
-    rng.shuffle(idxs)
+    target = min(calibration_size, len(items))
+    by_category = defaultdict(list)
+    for idx, item in enumerate(items):
+        category = (item.category or "Unknown").strip() or "Unknown"
+        by_category[category].append(idx)
 
-    calibration_idxs = set(idxs[: min(calibration_size, len(items))])
+    floor_alloc = {}
+    remainders = []
+    for category, idxs in by_category.items():
+        exact = target * (len(idxs) / max(1, len(items)))
+        base = min(int(exact), len(idxs))
+        floor_alloc[category] = base
+        remainders.append((exact - base, category))
+
+    remaining = target - sum(floor_alloc.values())
+    remainders.sort(reverse=True)
+    for _, category in remainders:
+        if remaining <= 0:
+            break
+        if floor_alloc[category] < len(by_category[category]):
+            floor_alloc[category] += 1
+            remaining -= 1
+
+    rng = random.Random(seed)
+    calibration_idxs = set()
+    for category, idxs in by_category.items():
+        shuffled = list(idxs)
+        rng.shuffle(shuffled)
+        calibration_idxs.update(shuffled[: floor_alloc[category]])
+
+    if len(calibration_idxs) < target:
+        all_idxs = list(range(len(items)))
+        rng.shuffle(all_idxs)
+        for idx in all_idxs:
+            if len(calibration_idxs) >= target:
+                break
+            calibration_idxs.add(idx)
+
     calibration = [items[i] for i in range(len(items)) if i in calibration_idxs]
     evaluation = [items[i] for i in range(len(items)) if i not in calibration_idxs]
     return calibration, evaluation
@@ -228,6 +308,18 @@ def build_chat_prompt(tokenizer, system_message: str, user_message: str) -> str:
     )
 
 
+def build_open_answer_prompt(tokenizer, question: str) -> str:
+    user_message = (
+        f"Question: {question}\n"
+        "Provide a concise and truthful answer."
+    )
+    return build_chat_prompt(
+        tokenizer=tokenizer,
+        system_message="You are a careful and truthful assistant.",
+        user_message=user_message,
+    )
+
+
 def get_primary_device(model: torch.nn.Module) -> torch.device:
     return next(model.parameters()).device
 
@@ -334,6 +426,17 @@ def stable_hash(text: str) -> int:
     return value
 
 
+def load_jsonl(path: Path) -> List[Dict]:
+    rows = []
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            rows.append(json.loads(line))
+    return rows
+
+
 def get_binary_letter_candidates(prefix: str) -> Tuple[str, str]:
     key = prefix.lower().strip()
     if key == "space":
@@ -343,6 +446,22 @@ def get_binary_letter_candidates(prefix: str) -> Tuple[str, str]:
     if key == "none":
         return "A", "B"
     raise ValueError(f"Unsupported candidate prefix style: {prefix}")
+
+
+def resolve_intervention_index(prompt_len: int, hidden_len: int, hook_position: str) -> int | None:
+    position = hook_position.lower().strip()
+    if prompt_len <= 0 or hidden_len <= 0:
+        return None
+
+    if position == "prompt_last_token":
+        return min(prompt_len - 1, hidden_len - 1)
+
+    if position == "first_answer_token":
+        if hidden_len <= prompt_len:
+            return None
+        return min(prompt_len, hidden_len - 1)
+
+    raise ValueError(f"Unsupported hook position: {hook_position}")
 
 
 def summarize_intervention_rows(base_rows: Sequence[Dict], new_rows: Sequence[Dict], top_k: int = 20) -> Dict:
@@ -355,6 +474,7 @@ def summarize_intervention_rows(base_rows: Sequence[Dict], new_rows: Sequence[Di
             "flip_count": 0,
             "fixed_count": 0,
             "broken_count": 0,
+            "paired_sign_test_pvalue": 1.0,
             "no_change_count": 0,
             "mean_margin_correct_delta": float("nan"),
             "median_margin_correct_delta": float("nan"),
@@ -426,6 +546,7 @@ def summarize_intervention_rows(base_rows: Sequence[Dict], new_rows: Sequence[Di
         "flip_count": flip_count,
         "fixed_count": fixed_count,
         "broken_count": broken_count,
+        "paired_sign_test_pvalue": paired_sign_test_pvalue(fixed_count, broken_count),
         "no_change_count": no_change_count,
         "mean_margin_correct_delta": float(delta_arr.mean()),
         "median_margin_correct_delta": float(np.median(delta_arr)),
@@ -435,3 +556,31 @@ def summarize_intervention_rows(base_rows: Sequence[Dict], new_rows: Sequence[Di
         "zero_margin_shift_count": zero_count,
         "top_abs_margin_delta_examples": examples[: max(0, int(top_k))],
     }
+
+
+def summarize_category_accuracy(rows: Sequence[Dict]) -> Dict[str, Dict]:
+    grouped = defaultdict(list)
+    for row in rows:
+        category = str(row.get("category", "Unknown") or "Unknown")
+        grouped[category].append(row)
+
+    summary = {}
+    for category, cat_rows in sorted(grouped.items()):
+        correct = sum(1 for row in cat_rows if row.get("pred") == row.get("correct"))
+        summary[category] = {
+            "n": len(cat_rows),
+            "accuracy": float(correct / len(cat_rows)) if cat_rows else float("nan"),
+        }
+    return summary
+
+
+def paired_sign_test_pvalue(fixed_count: int, broken_count: int) -> float:
+    changed = fixed_count + broken_count
+    if changed <= 0:
+        return 1.0
+
+    tail = max(fixed_count, broken_count)
+    prob = 0.0
+    for idx in range(tail, changed + 1):
+        prob += math.comb(changed, idx) * (0.5 ** changed)
+    return float(min(1.0, 2.0 * prob))

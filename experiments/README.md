@@ -48,6 +48,32 @@ uv run python experiments/scripts/extract_direction.py \
   --metadata-json experiments/artifacts/qwen_directions_meta.json
 ```
 
+Upgraded options:
+
+- Balanced instruction contrastive direction from prepared calibration prompts:
+
+```bash
+uv run python experiments/scripts/extract_direction.py \
+  --load-in-4bit \
+  --method instruction \
+  --contrastive-jsonl experiments/data/prepared/calib_contrastive.jsonl \
+  --output experiments/artifacts/qwen_instruction_directions.npz \
+  --metadata-json experiments/artifacts/qwen_instruction_directions_meta.json
+```
+
+- Answer-state direction from teacher-forced correct vs incorrect continuations:
+
+```bash
+uv run python experiments/scripts/extract_direction.py \
+  --load-in-4bit \
+  --method answer_state \
+  --calibration-size 200 \
+  --max-correct-variants 2 \
+  --max-incorrect-variants 2 \
+  --output experiments/artifacts/qwen_answerstate_directions.npz \
+  --metadata-json experiments/artifacts/qwen_answerstate_directions_meta.json
+```
+
 ## 4) Phase A: activation probe (4-bit)
 
 ```bash
@@ -59,6 +85,22 @@ uv run python experiments/scripts/activation_probe.py \
   --candidate-prefix space \
   --max-samples 160 \
   --output-json experiments/artifacts/qwen_activation_probe_eval.json
+```
+
+The probe output now includes per-category accuracy summaries and paired sign-test diagnostics.
+
+## 4.5) Multi-seed upgraded probe runner
+
+```bash
+uv run python experiments/scripts/run_multiseed_probe.py \
+  --load-in-4bit \
+  --direction-method instruction \
+  --seeds 7,13 \
+  --calibration-size 200 \
+  --layers 20,21,22,23,24 \
+  --beta 3.0 \
+  --candidate-prefix newline \
+  --output-dir experiments/artifacts/instruction_v3_l20to24_b3p0
 ```
 
 ## 5) Phase B: minimal weight patch (BF16)
