@@ -1,0 +1,45 @@
+{
+  "source": {
+    "csv_path": "experiments\\data\\TruthfulQA.csv",
+    "n_questions": 790,
+    "n_categories": 37
+  },
+  "split": {
+    "calibration_size_target": 200,
+    "calibration_size_actual": 200,
+    "heldout_size": 590,
+    "stratified": true
+  },
+  "datasets": {
+    "eval_binary": {
+      "path": "Hallucination-Direction-Ablation\\experiments\\artifacts\\multiseed_choicestate_l20to24_b3p0_firsttok\\seed_7\\prepared\\eval_binary.jsonl",
+      "rows": 790
+    },
+    "calib_contrastive": {
+      "path": "Hallucination-Direction-Ablation\\experiments\\artifacts\\multiseed_choicestate_l20to24_b3p0_firsttok\\seed_7\\prepared\\calib_contrastive.jsonl",
+      "rows": 3200,
+      "expected_rows_before_dedup": 3200
+    },
+    "drift_benign": {
+      "path": "Hallucination-Direction-Ablation\\experiments\\artifacts\\multiseed_choicestate_l20to24_b3p0_firsttok\\seed_7\\prepared\\drift_benign.jsonl",
+      "rows": 40
+    },
+    "manual_audit_samples": {
+      "path": "Hallucination-Direction-Ablation\\experiments\\artifacts\\multiseed_choicestate_l20to24_b3p0_firsttok\\seed_7\\prepared\\manual_audit_samples.jsonl",
+      "rows": 80
+    }
+  },
+  "templates": {
+    "hallucination_count": 4,
+    "grounded_count": 4
+  },
+  "quality_checks": {
+    "eval_option_integrity_failures": 0,
+    "eval_label_failures": 0,
+    "calib_option_integrity_failures": 0,
+    "calib_label_failures": 0,
+    "prompt_structure_failures": 0,
+    "answer_leak_failures": 0,
+    "examples": []
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "dtype": "bfloat16",
+  "load_in_4bit": true,
+  "gpu_memory_gb": 15,
+  "seed": 7,
+  "output": "Hallucination-Direction-Ablation\\experiments\\artifacts\\multiseed_choicestate_l20to24_b3p0_firsttok\\seed_7\\directions_choice_state.npz",
+  "method": "choice_state",
+  "contrastive_jsonl": "Hallucination-Direction-Ablation\\experiments\\artifacts\\multiseed_choicestate_l20to24_b3p0_firsttok\\seed_7\\prepared\\calib_contrastive.jsonl",
+  "positive_family": "hallucination",
+  "negative_family": "grounded",
+  "choice_prefix": "newline",
+  "answer_pool": "last",
+  "n_positive_rows": 1600,
+  "n_negative_rows": 1600,
+  "direction_semantics": "hallucination_choice_state_minus_grounded_choice_state",
+  "intervention_semantics": "projection removal suppresses positive-family signal at the choice-token state",
+  "system_message": "You are a careful assistant focused on factual correctness."
+}

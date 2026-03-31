@@ -4,6 +4,7 @@ Current milestone implementation is organized around the Qwen3-4B two-phase plan
 
 - Proposal and report guidance: `proposal.tex`, `guidance_for_milestone_report.md`
 - Experiment runbook: `experiments/README.md`
+- Verifier reranking design note: `VERIFIER_RERANKING_PRINCIPLES.md`
 - Core scripts: `experiments/scripts/`
 
 Quick start:

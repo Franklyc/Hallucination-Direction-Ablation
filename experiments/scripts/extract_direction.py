@@ -11,6 +11,7 @@ from common import (
     build_open_answer_prompt,
     ensure_parent_dir,
     ensure_truthfulqa_csv,
+    get_binary_letter_candidates,
     get_primary_device,
     load_jsonl,
     load_model_and_tokenizer,
@@ -35,7 +36,7 @@ def parse_args():
     parser.add_argument(
         "--method",
         default="answer_state",
-        choices=["instruction", "answer_state"],
+        choices=["instruction", "answer_state", "choice_state"],
         help="How to estimate the direction to remove at inference time",
     )
     parser.add_argument(
@@ -94,6 +95,12 @@ def parse_args():
         default="mean",
         choices=["mean", "first", "last"],
         help="How to pool answer-token hidden states in answer_state mode",
+    )
+    parser.add_argument(
+        "--choice-prefix",
+        default="newline",
+        choices=["space", "newline", "none"],
+        help="Candidate prefix style for choice_state extraction",
     )
     parser.add_argument(
         "--max-correct-variants",
@@ -318,6 +325,72 @@ def extract_answer_state_direction(args, model, tokenizer, device):
     return directions, metadata
 
 
+def extract_choice_state_direction(args, model, tokenizer, device):
+    rows = load_jsonl(Path(args.contrastive_jsonl))
+    rows = [row for row in rows if row.get("prompt_family") in {args.positive_family, args.negative_family}]
+    if args.max_contrastive_rows > 0:
+        rows = rows[: args.max_contrastive_rows]
+    if not rows:
+        raise ValueError("No usable contrastive rows found for choice-state extraction.")
+
+    cand_a, cand_b = get_binary_letter_candidates(args.choice_prefix)
+    label_to_continuation = {
+        "A": cand_a,
+        "B": cand_b,
+    }
+
+    sum_pos = None
+    sum_neg = None
+    count_pos = 0
+    count_neg = 0
+
+    for row in tqdm(rows, desc="Direction extraction"):
+        prompt = build_instruction_prompt(row, tokenizer)
+        continuation = label_to_continuation.get(str(row.get("label", "")).strip().upper())
+        if continuation is None:
+            continue
+        vecs = get_answer_hidden_states(
+            model=model,
+            tokenizer=tokenizer,
+            prompt=prompt,
+            answer_text=continuation,
+            device=device,
+            pool=args.answer_pool,
+        )
+        family = row.get("prompt_family")
+        if family == args.positive_family:
+            if sum_pos is None:
+                sum_pos = np.zeros_like(vecs)
+            sum_pos += vecs
+            count_pos += 1
+        elif family == args.negative_family:
+            if sum_neg is None:
+                sum_neg = np.zeros_like(vecs)
+            sum_neg += vecs
+            count_neg += 1
+
+    if count_pos <= 0 or count_neg <= 0:
+        raise ValueError("Choice-state extraction needs non-empty positive and negative families.")
+
+    mean_pos = sum_pos / float(count_pos)
+    mean_neg = sum_neg / float(count_neg)
+    directions = mean_pos - mean_neg
+    metadata = {
+        "method": "choice_state",
+        "contrastive_jsonl": args.contrastive_jsonl,
+        "positive_family": args.positive_family,
+        "negative_family": args.negative_family,
+        "choice_prefix": args.choice_prefix,
+        "answer_pool": args.answer_pool,
+        "n_positive_rows": count_pos,
+        "n_negative_rows": count_neg,
+        "direction_semantics": f"{args.positive_family}_choice_state_minus_{args.negative_family}_choice_state",
+        "intervention_semantics": "projection removal suppresses positive-family signal at the choice-token state",
+        "system_message": INSTRUCTION_SYSTEM,
+    }
+    return directions, metadata
+
+
 def main():
     args = parse_args()
     random.seed(args.seed)
@@ -332,6 +405,8 @@ def main():
 
     if args.method == "instruction":
         directions, method_meta = extract_instruction_direction(args, model, tokenizer, device)
+    elif args.method == "choice_state":
+        directions, method_meta = extract_choice_state_direction(args, model, tokenizer, device)
     else:
         directions, method_meta = extract_answer_state_direction(args, model, tokenizer, device)
 

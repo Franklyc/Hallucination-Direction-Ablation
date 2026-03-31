@@ -103,6 +103,36 @@ uv run python experiments/scripts/run_multiseed_probe.py \
   --output-dir experiments/artifacts/instruction_v3_l20to24_b3p0
 ```
 
+## 4.6) Calibration-selected verifier reranking
+
+This is now the strongest route for the current binary TruthfulQA setup. Method details are documented in `VERIFIER_RERANKING_PRINCIPLES.md`.
+
+Single-seed full held-out run:
+
+```bash
+uv run python experiments/scripts/truthfulqa_verifier_eval.py \
+  --load-in-4bit \
+  --gpu-memory-gb 15 \
+  --seed 7 \
+  --calibration-size 200 \
+  --candidate-prefix newline \
+  --verdict-prefixes newline \
+  --output-json experiments/artifacts/verifier_full_seed7.json
+```
+
+Multi-seed verifier runner:
+
+```bash
+uv run python experiments/scripts/run_multiseed_verifier.py \
+  --load-in-4bit \
+  --gpu-memory-gb 15 \
+  --seeds 7,13,29 \
+  --calibration-size 200 \
+  --candidate-prefix newline \
+  --verdict-prefixes newline \
+  --output-dir experiments/artifacts/verifier_multiseed
+```
+
 ## 5) Phase B: minimal weight patch (BF16)
 
 ```bash

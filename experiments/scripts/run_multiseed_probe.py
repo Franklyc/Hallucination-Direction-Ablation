@@ -33,7 +33,7 @@ def parse_args():
     parser.add_argument(
         "--direction-method",
         default="answer_state",
-        choices=["instruction", "answer_state"],
+        choices=["instruction", "answer_state", "choice_state"],
         help="Direction extraction method",
     )
     parser.add_argument(
@@ -58,6 +58,18 @@ def parse_args():
         default="newline",
         choices=["space", "newline", "none"],
         help="Candidate prefix style for binary scoring",
+    )
+    parser.add_argument(
+        "--choice-prefix",
+        default="newline",
+        choices=["space", "newline", "none"],
+        help="Candidate prefix style for choice_state extraction",
+    )
+    parser.add_argument(
+        "--hook-position",
+        default="prompt_last_token",
+        choices=["prompt_last_token", "first_answer_token"],
+        help="Which token position to edit during probing",
     )
     parser.add_argument(
         "--bootstrap",
@@ -89,6 +101,12 @@ def parse_args():
         help="Prepared contrastive calibration rows for instruction mode",
     )
     parser.add_argument(
+        "--max-contrastive-rows",
+        type=int,
+        default=0,
+        help="Optional cap on prepared contrastive rows for instruction or choice_state extraction",
+    )
+    parser.add_argument(
         "--output-dir",
         default="experiments/artifacts/multiseed_probe",
         help="Where to save per-seed and aggregate outputs",
@@ -118,6 +136,13 @@ def run_command(command, workdir: Path):
     subprocess.run(command, cwd=str(workdir), check=True)
 
 
+def resolve_cli_path(path_str: str, workdir: Path) -> Path:
+    path = Path(path_str)
+    if path.is_absolute():
+        return path
+    return workdir / path
+
+
 def maybe_load_json(path: Path):
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
@@ -140,7 +165,7 @@ def main():
     args = parse_args()
     workdir = Path(__file__).resolve().parents[2]
     script_dir = Path(__file__).resolve().parent
-    output_dir = Path(args.output_dir)
+    output_dir = resolve_cli_path(args.output_dir, workdir)
     output_dir.mkdir(parents=True, exist_ok=True)
     seeds = parse_seed_list(args.seeds)
     python_exe = sys.executable
@@ -152,9 +177,9 @@ def main():
         directions_path = seed_dir / f"directions_{args.direction_method}.npz"
         directions_meta_path = seed_dir / f"directions_{args.direction_method}_meta.json"
         probe_path = seed_dir / f"probe_{args.direction_method}.json"
-        seed_contrastive_path = Path(args.contrastive_jsonl)
+        seed_contrastive_path = resolve_cli_path(args.contrastive_jsonl, workdir)
 
-        if args.direction_method == "instruction":
+        if args.direction_method in {"instruction", "choice_state"}:
             prepared_dir = seed_dir / "prepared"
             prepared_report = seed_dir / "dataset_prepare_report.json"
             seed_contrastive_path = prepared_dir / "calib_contrastive.jsonl"
@@ -196,13 +221,29 @@ def main():
             ]
             if args.load_in_4bit:
                 extract_cmd.append("--load-in-4bit")
-            if args.direction_method == "instruction":
+            if args.direction_method in {"instruction", "choice_state"}:
                 extract_cmd.extend(
                     [
                         "--contrastive-jsonl",
                         str(seed_contrastive_path),
                     ]
                 )
+                if args.max_contrastive_rows > 0:
+                    extract_cmd.extend(
+                        [
+                            "--max-contrastive-rows",
+                            str(args.max_contrastive_rows),
+                        ]
+                    )
+                if args.direction_method == "choice_state":
+                    extract_cmd.extend(
+                        [
+                            "--choice-prefix",
+                            args.choice_prefix,
+                            "--answer-pool",
+                            args.answer_pool,
+                        ]
+                    )
             else:
                 extract_cmd.extend(
                     [
@@ -238,6 +279,8 @@ def main():
                 str(args.beta),
                 "--candidate-prefix",
                 args.candidate_prefix,
+                "--hook-position",
+                args.hook_position,
                 "--bootstrap",
                 str(args.bootstrap),
                 "--output-json",
@@ -285,7 +328,10 @@ def main():
             "layers": [int(x.strip()) for x in args.layers.split(",") if x.strip()],
             "beta": args.beta,
             "candidate_prefix": args.candidate_prefix,
+            "choice_prefix": args.choice_prefix,
+            "hook_position": args.hook_position,
             "answer_pool": args.answer_pool,
+            "max_contrastive_rows": args.max_contrastive_rows,
             "max_correct_variants": args.max_correct_variants,
             "max_incorrect_variants": args.max_incorrect_variants,
             "seeds": seeds,

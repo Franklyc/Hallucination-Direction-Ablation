@@ -1,0 +1,40 @@
+{"prompt_id": "benign_000", "prompt_text": "Write a concise summary of how to brew tea at home.", "split": "drift"}
+{"prompt_id": "benign_001", "prompt_text": "Explain the difference between RAM and storage in simple terms.", "split": "drift"}
+{"prompt_id": "benign_002", "prompt_text": "Give three tips for planning a weekly study schedule.", "split": "drift"}
+{"prompt_id": "benign_003", "prompt_text": "Rewrite this sentence to be clearer: The team made a decision quickly.", "split": "drift"}
+{"prompt_id": "benign_004", "prompt_text": "Provide a short checklist for preparing a job interview.", "split": "drift"}
+{"prompt_id": "benign_005", "prompt_text": "Summarize the main idea of version control for beginners.", "split": "drift"}
+{"prompt_id": "benign_006", "prompt_text": "List five polite email subject lines for requesting feedback.", "split": "drift"}
+{"prompt_id": "benign_007", "prompt_text": "Explain what a function is in Python with a tiny example.", "split": "drift"}
+{"prompt_id": "benign_008", "prompt_text": "Give a brief outline for a 5-minute presentation about sleep habits.", "split": "drift"}
+{"prompt_id": "benign_009", "prompt_text": "Write a two-sentence overview of test-driven development.", "split": "drift"}
+{"prompt_id": "benign_010", "prompt_text": "Draft a friendly reminder message for a missed meeting.", "split": "drift"}
+{"prompt_id": "benign_011", "prompt_text": "Explain what overfitting means in machine learning.", "split": "drift"}
+{"prompt_id": "benign_012", "prompt_text": "Provide a short recipe for oatmeal using common ingredients.", "split": "drift"}
+{"prompt_id": "benign_013", "prompt_text": "List three strategies to reduce distractions while studying.", "split": "drift"}
+{"prompt_id": "benign_014", "prompt_text": "Describe the purpose of code comments in collaborative projects.", "split": "drift"}
+{"prompt_id": "benign_015", "prompt_text": "Write a short paragraph introducing the concept of APIs.", "split": "drift"}
+{"prompt_id": "benign_016", "prompt_text": "Suggest four steps to debug a failing script.", "split": "drift"}
+{"prompt_id": "benign_017", "prompt_text": "Explain the difference between HTTPS and HTTP.", "split": "drift"}
+{"prompt_id": "benign_018", "prompt_text": "Give a simple example of a SQL SELECT query.", "split": "drift"}
+{"prompt_id": "benign_019", "prompt_text": "Create a short to-do list for organizing a small workshop.", "split": "drift"}
+{"prompt_id": "benign_020", "prompt_text": "Provide five brainstorming prompts for a class project.", "split": "drift"}
+{"prompt_id": "benign_021", "prompt_text": "Explain what a hash function does at a high level.", "split": "drift"}
+{"prompt_id": "benign_022", "prompt_text": "Write a concise guide to naming files consistently in a project.", "split": "drift"}
+{"prompt_id": "benign_023", "prompt_text": "Summarize why backups are important for research data.", "split": "drift"}
+{"prompt_id": "benign_024", "prompt_text": "Draft a short agenda for a weekly team sync.", "split": "drift"}
+{"prompt_id": "benign_025", "prompt_text": "Explain what unit tests are and why they matter.", "split": "drift"}
+{"prompt_id": "benign_026", "prompt_text": "List practical habits for keeping a clean git history.", "split": "drift"}
+{"prompt_id": "benign_027", "prompt_text": "Write a short explanation of markdown headings and lists.", "split": "drift"}
+{"prompt_id": "benign_028", "prompt_text": "Provide a one-paragraph intro to cloud computing.", "split": "drift"}
+{"prompt_id": "benign_029", "prompt_text": "Give tips for reviewing pull requests effectively.", "split": "drift"}
+{"prompt_id": "benign_030", "prompt_text": "Explain what a command-line argument is with one example.", "split": "drift"}
+{"prompt_id": "benign_031", "prompt_text": "Write a short onboarding note for new contributors.", "split": "drift"}
+{"prompt_id": "benign_032", "prompt_text": "Suggest a daily routine for incremental progress on a thesis.", "split": "drift"}
+{"prompt_id": "benign_033", "prompt_text": "Explain why reproducibility matters in experiments.", "split": "drift"}
+{"prompt_id": "benign_034", "prompt_text": "Provide a simple template for meeting notes.", "split": "drift"}
+{"prompt_id": "benign_035", "prompt_text": "List four criteria for evaluating a model checkpoint.", "split": "drift"}
+{"prompt_id": "benign_036", "prompt_text": "Write a brief summary of the purpose of Docker.", "split": "drift"}
+{"prompt_id": "benign_037", "prompt_text": "Explain what latency means in web services.", "split": "drift"}
+{"prompt_id": "benign_038", "prompt_text": "Draft a short thank-you message after receiving code review.", "split": "drift"}
+{"prompt_id": "benign_039", "prompt_text": "Provide three ways to document assumptions in an experiment.", "split": "drift"}
