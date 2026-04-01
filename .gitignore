@@ -19,3 +19,4 @@ experiments/data/TruthfulQA.csv
 /milestone report
 *.tex
 /experiments/plans
+build_milestone_report.ps1
