@@ -15,3 +15,7 @@ experiments/data/prepared/
 experiments/data/prepared_smoke/
 /context
 experiments/data/TruthfulQA.csv
+/neurips_style_files
+/milestone report
+*.tex
+/experiments/plans
