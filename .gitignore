@@ -8,6 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+.worktrees/
 
 # Generated experiment outputs and derived datasets
 experiments/artifacts/
