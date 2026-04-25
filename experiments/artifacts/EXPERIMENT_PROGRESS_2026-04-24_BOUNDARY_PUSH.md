@@ -42,3 +42,12 @@
 - fixed verifier mean delta: +2.37 points over 6 seeds
 - fixed minus selected gap: +0.82 points over shared seeds
 - keep verifier story as: fixed factual verifier is the stronger route on the standardized six-seed comparison.
+
+## Binary-to-open bridge decision
+
+- base supported_answer rate: 0.225
+- patched supported_answer rate: 0.200
+- base contradicted_reference rate: 0.125
+- patched contradicted_reference rate: 0.125
+- unresolved change: 0.450 -> 0.525 (18 -> 21); bridge used 8 overlapping changed questions plus 32 controls because 3 binary-changed questions were absent from open_eval.jsonl.
+- final interpretation: proxy-limited evidence; on the 40-row bridge, the patched model did not transfer the binary gain into stronger open-generation support.

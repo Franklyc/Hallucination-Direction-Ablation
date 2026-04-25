@@ -26,6 +26,12 @@ experiments/artifacts/analysis/*
 !experiments/artifacts/truthfulqa_qwen4b_generate_dola_high_seed41_refresh.json
 !experiments/artifacts/truthfulqa_qwen4b_generate_hda_seed41_refresh.json
 !experiments/artifacts/truthfulqa_qwen4b_generate_hda_dola_high_seed41_refresh.json
+!experiments/artifacts/patched_models/
+experiments/artifacts/patched_models/*
+!experiments/artifacts/patched_models/qwen4b_l18to19_mlp_a2p8_seed41_bridge/
+!experiments/artifacts/patched_models/qwen4b_l18to19_mlp_a2p8_seed41_bridge/**
+!experiments/artifacts/open_bridge_qwen4b_base_seed41.json
+!experiments/artifacts/open_bridge_qwen4b_hda_seed41.json
 experiments/data/prepared/
 experiments/data/prepared_smoke/
 /context
