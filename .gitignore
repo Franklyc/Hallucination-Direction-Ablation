@@ -12,6 +12,9 @@ wheels/
 
 # Generated experiment outputs and derived datasets
 experiments/artifacts/
+!experiments/artifacts/
+experiments/artifacts/*
+!experiments/artifacts/EXPERIMENT_PROGRESS_*.md
 experiments/data/prepared/
 experiments/data/prepared_smoke/
 /context
