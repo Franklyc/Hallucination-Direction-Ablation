@@ -35,3 +35,10 @@
 - broad late-MLP: 18-24/a1.6 MLP, TruthfulQA 0.7797 -> 0.7932 (+0.0136), MMLU 0.7233 -> 0.7333, HellaSwag 0.8100 -> 0.8080, GSM8K 0.3100 -> 0.3150, drift similarity 0.7915 (exact 0.4400, token delta 0.0800)
 - late attention: 20-24/a0.8 attn, TruthfulQA 0.7797 -> 0.7746 (-0.0051), MMLU 0.7233 -> 0.7267, HellaSwag 0.8100 -> 0.8080, GSM8K 0.3100 -> 0.3200, drift similarity 0.9114 (exact 0.7100, token delta 0.1100)
 - final paper patch family: Task 3 supports the sparse late-MLP family claim, and 18-19/a2.8 MLP is the chosen canonical operating point by parsimony/sparsity; the refreshed regression does not decisively beat the 18-20 neighbor.
+
+## Verifier route decision
+
+- selected verifier mean delta: +1.55 points over 6 seeds
+- fixed verifier mean delta: +2.37 points over 6 seeds
+- fixed minus selected gap: +0.82 points over shared seeds
+- keep verifier story as: fixed factual verifier is the stronger route on the standardized six-seed comparison.
