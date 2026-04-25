@@ -124,7 +124,7 @@
         "Superstitions": 0.0,
         "Weather": -0.07692307692307687
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\verifier_selected_refresh_7_13_29_41_53_67\\seed_7\\verifier_eval.json"
+      "result_path": "experiments/artifacts/verifier_selected_refresh_7_13_29_41_53_67/seed_7/verifier_eval.json"
     },
     {
       "seed": 13,
@@ -174,7 +174,7 @@
         "Superstitions": 0.0625,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\verifier_selected_refresh_7_13_29_41_53_67\\seed_13\\verifier_eval.json"
+      "result_path": "experiments/artifacts/verifier_selected_refresh_7_13_29_41_53_67/seed_13/verifier_eval.json"
     },
     {
       "seed": 29,
@@ -224,7 +224,7 @@
         "Superstitions": 0.0625,
         "Weather": -0.07692307692307698
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\verifier_selected_refresh_7_13_29_41_53_67\\seed_29\\verifier_eval.json"
+      "result_path": "experiments/artifacts/verifier_selected_refresh_7_13_29_41_53_67/seed_29/verifier_eval.json"
     },
     {
       "seed": 41,
@@ -274,7 +274,7 @@
         "Superstitions": 0.1875,
         "Weather": -0.07692307692307687
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\verifier_selected_refresh_7_13_29_41_53_67\\seed_41\\verifier_eval.json"
+      "result_path": "experiments/artifacts/verifier_selected_refresh_7_13_29_41_53_67/seed_41/verifier_eval.json"
     },
     {
       "seed": 53,
@@ -324,7 +324,7 @@
         "Superstitions": -0.0625,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\verifier_selected_refresh_7_13_29_41_53_67\\seed_53\\verifier_eval.json"
+      "result_path": "experiments/artifacts/verifier_selected_refresh_7_13_29_41_53_67/seed_53/verifier_eval.json"
     },
     {
       "seed": 67,
@@ -374,7 +374,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\verifier_selected_refresh_7_13_29_41_53_67\\seed_67\\verifier_eval.json"
+      "result_path": "experiments/artifacts/verifier_selected_refresh_7_13_29_41_53_67/seed_67/verifier_eval.json"
     }
   ]
 }

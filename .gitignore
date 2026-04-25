@@ -18,6 +18,10 @@ experiments/artifacts/*
 experiments/artifacts/analysis/*
 !experiments/artifacts/analysis/*.json
 !experiments/artifacts/EXPERIMENT_PROGRESS_*.md
+!experiments/artifacts/verifier_selected_refresh_7_13_29_41_53_67/
+!experiments/artifacts/verifier_selected_refresh_7_13_29_41_53_67/**
+!experiments/artifacts/verifier_fixed_refresh_7_13_29_41_53_67/
+!experiments/artifacts/verifier_fixed_refresh_7_13_29_41_53_67/**
 experiments/data/prepared/
 experiments/data/prepared_smoke/
 /context
