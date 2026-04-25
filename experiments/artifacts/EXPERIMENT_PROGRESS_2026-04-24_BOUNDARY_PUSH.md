@@ -25,4 +25,4 @@
 - wide late-MLP 18-24: +0.80 points over 10 seeds, 10/10 positive
 - attention-only late band: -0.39 points over 10 seeds, 0/10 positive
 - all-layer MLP: -0.00 points over 10 seeds, 5/10 positive
-- keep claim as: the late-MLP narrow patch still dominates this fixed control family; keep the localization claim on the tuned sparse 18-19 MLP patch.
+- keep claim as: the late-MLP narrow family survives this fixed control family; Task 3 regression should decide whether the final exact-band claim is 18-19 or 18-20.

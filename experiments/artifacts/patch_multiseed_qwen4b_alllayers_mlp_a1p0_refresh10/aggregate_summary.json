@@ -157,7 +157,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10\\patch_seed7.json"
+        "result_path": "experiments/artifacts/patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10/patch_seed7.json"
     },
     {
       "seed": 13,
@@ -206,7 +206,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10\\patch_seed13.json"
+        "result_path": "experiments/artifacts/patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10/patch_seed13.json"
     },
     {
       "seed": 23,
@@ -255,7 +255,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10\\patch_seed23.json"
+        "result_path": "experiments/artifacts/patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10/patch_seed23.json"
     },
     {
       "seed": 29,
@@ -304,7 +304,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10\\patch_seed29.json"
+        "result_path": "experiments/artifacts/patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10/patch_seed29.json"
     },
     {
       "seed": 31,
@@ -353,7 +353,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10\\patch_seed31.json"
+        "result_path": "experiments/artifacts/patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10/patch_seed31.json"
     },
     {
       "seed": 41,
@@ -402,7 +402,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10\\patch_seed41.json"
+        "result_path": "experiments/artifacts/patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10/patch_seed41.json"
     },
     {
       "seed": 53,
@@ -451,7 +451,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10\\patch_seed53.json"
+        "result_path": "experiments/artifacts/patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10/patch_seed53.json"
     },
     {
       "seed": 67,
@@ -500,7 +500,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10\\patch_seed67.json"
+        "result_path": "experiments/artifacts/patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10/patch_seed67.json"
     },
     {
       "seed": 89,
@@ -549,7 +549,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10\\patch_seed89.json"
+        "result_path": "experiments/artifacts/patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10/patch_seed89.json"
     },
     {
       "seed": 123,
@@ -598,7 +598,7 @@
         "Superstitions": 0.0,
         "Weather": 0.0
       },
-      "result_path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10\\patch_seed123.json"
+        "result_path": "experiments/artifacts/patch_multiseed_qwen4b_alllayers_mlp_a1p0_refresh10/patch_seed123.json"
     }
   ]
 }
