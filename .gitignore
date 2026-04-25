@@ -17,6 +17,8 @@ experiments/artifacts/*
 !experiments/artifacts/analysis/
 experiments/artifacts/analysis/*
 !experiments/artifacts/analysis/*.json
+!experiments/artifacts/analysis/final_qwen4b_route_table.csv
+!experiments/artifacts/analysis/final_cross_model_patch_table.csv
 !experiments/artifacts/EXPERIMENT_PROGRESS_*.md
 !experiments/artifacts/verifier_selected_refresh_7_13_29_41_53_67/
 !experiments/artifacts/verifier_selected_refresh_7_13_29_41_53_67/**
@@ -32,6 +34,8 @@ experiments/artifacts/patched_models/*
 !experiments/artifacts/patched_models/qwen4b_l18to19_mlp_a2p8_seed41_bridge/**
 !experiments/artifacts/open_bridge_qwen4b_base_seed41.json
 !experiments/artifacts/open_bridge_qwen4b_hda_seed41.json
+!experiments/artifacts/route_plots/
+!experiments/artifacts/route_plots/**
 experiments/data/prepared/
 experiments/data/prepared_smoke/
 /context
@@ -39,5 +43,6 @@ experiments/data/TruthfulQA.csv
 /neurips_style_files
 /milestone report
 *.tex
+!final_report.tex
 /experiments/plans
 build_milestone_report.ps1

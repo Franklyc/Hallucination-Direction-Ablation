@@ -1,0 +1,10 @@
+method,protocol,score_or_delta_points,notes
+Base,TruthfulQA binary logprob,77.96610169491525,Absolute base accuracy on the canonical split
+HDA patch (best tuned),TruthfulQA binary logprob,0.9661016949152523,10/10 positive split seeds
+Verifier reranking,TruthfulQA binary logprob,2.3728813559322033,6/6 positive split seeds
+HDA patch alpha=1,TruthfulQA binary logprob,0.3389830508474523,Canonical-split control on the same band
+HDA patch all layers / MLP / alpha=1,TruthfulQA binary logprob,0.16949152542372614,Canonical-split control
+Base,TruthfulQA binary generation proxy,78.30508474576271,delta vs proxy base = +0.00 points
+DoLa,TruthfulQA binary generation proxy,77.96610169491525,delta vs proxy base = -0.34 points
+HDA,TruthfulQA binary generation proxy,78.8135593220339,delta vs proxy base = +0.51 points
+HDA + DoLa,TruthfulQA binary generation proxy,78.8135593220339,delta vs proxy base = +0.51 points

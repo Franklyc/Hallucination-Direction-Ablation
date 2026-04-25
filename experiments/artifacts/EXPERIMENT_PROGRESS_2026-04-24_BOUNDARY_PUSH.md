@@ -51,3 +51,11 @@
 - patched contradicted_reference rate: 0.125
 - unresolved change: 0.450 -> 0.525 (18 -> 21); bridge used 8 overlapping changed questions plus 32 controls because 3 binary-changed questions were absent from open_eval.jsonl.
 - final interpretation: proxy-limited evidence; on the 40-row bridge, the patched model did not transfer the binary gain into stronger open-generation support.
+
+## Final accepted paper claim
+
+- HDA claim: a tuned sparse late-MLP directional patch yields a small but stable Qwen3-4B TruthfulQA gain (+0.97 points over 10 seeds, 10/10 positive); 18-19 / MLP / a=2.8 is the canonical operating point, but the evidence supports a narrow late-MLP family more strongly than a unique exact-band discovery.
+- Verifier claim: fixed factual verifier reranking is the stronger route on the standardized six-seed comparison (+2.37 points over 6 seeds; +0.82 over the selected-verifier route on shared seeds).
+- DoLa claim: in the greedy A/B generation proxy, DoLa does not beat base and HDA + DoLa does not exceed HDA, so DoLa remains a bounded proxy check rather than a main result.
+- Open-generation claim: on the 40-row bridge, the patched model did not improve open-generation support relative to base, so the HDA evidence is proxy-limited rather than a validated free-form truthfulness gain.
+- What the paper should not claim: that HDA is the strongest method overall, that DoLa was fairly ruled out in its full-generation setting, or that binary TruthfulQA gains automatically transfer to open-ended truthfulness.

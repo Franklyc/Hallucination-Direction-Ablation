@@ -1,0 +1,587 @@
+{
+  "qwen4b_main": {
+    "base_accuracy": 0.7796610169491526,
+    "patched_accuracy": 0.7915254237288135,
+    "hda_patch_delta_points": 0.9661016949152523,
+    "hda_patch_seeds": 10,
+    "hda_patch_positive_seeds": 10,
+    "hda_patch_seed_points": [
+      1.186440677966094,
+      1.016949152542368,
+      0.8474576271186418,
+      0.5084745762711895,
+      0.8474576271186418,
+      1.186440677966094,
+      0.5084745762711895,
+      0.5084745762711895,
+      1.5254237288135575,
+      1.5254237288135575
+    ],
+    "hda_patch_seed_ids": [
+      7,
+      13,
+      23,
+      29,
+      31,
+      41,
+      53,
+      67,
+      89,
+      123
+    ],
+    "verifier_delta_points": 2.3728813559322033,
+    "verifier_seeds": 6,
+    "verifier_positive_seeds": 6,
+    "verifier_seed_points": [
+      1.6949152542372836,
+      3.220338983050841,
+      2.7118644067796627,
+      3.050847457627115,
+      1.5254237288135686,
+      2.033898305084747
+    ],
+    "verifier_seed_ids": [
+      7,
+      13,
+      29,
+      41,
+      53,
+      67
+    ],
+    "paired_bootstrap_ci_low_points": 0.1694915254237288,
+    "paired_bootstrap_ci_high_points": 2.3728813559322033,
+    "drift_similarity": 0.9742726180847447,
+    "material_drift_rate": 0.02,
+    "controls": [
+      {
+        "label": "HDA tuned\n18-19 / mlp / a=2.8",
+        "delta_points": 1.186440677966094,
+        "n_eval": 590,
+        "color": "#4C78A8"
+      },
+      {
+        "label": "18-20 / mlp / a=2.4",
+        "delta_points": 1.186440677966094,
+        "n_eval": 590,
+        "color": "#9ecae9"
+      },
+      {
+        "label": "18-24 / mlp / a=1.6",
+        "delta_points": 1.3559322033898313,
+        "n_eval": 590,
+        "color": "#F58518"
+      },
+      {
+        "label": "18-19 / mlp / a=1.0",
+        "delta_points": 0.3389830508474523,
+        "n_eval": 590,
+        "color": "#F58518"
+      },
+      {
+        "label": "all / mlp / a=1.0",
+        "delta_points": 0.16949152542372614,
+        "n_eval": 590,
+        "color": "#F58518"
+      },
+      {
+        "label": "all / both / a=1.0",
+        "delta_points": -0.5555555555555536,
+        "n_eval": 180,
+        "color": "#8C564B"
+      }
+    ]
+  },
+  "qwen4b_dola_proxy": {
+    "Base": {
+      "accuracy": 78.30508474576271,
+      "delta_points_vs_base": 0.0
+    },
+    "DoLa": {
+      "accuracy": 77.96610169491525,
+      "delta_points_vs_base": -0.3389830508474523
+    },
+    "HDA": {
+      "accuracy": 78.8135593220339,
+      "delta_points_vs_base": 0.5084745762711895
+    },
+    "HDA + DoLa": {
+      "accuracy": 78.8135593220339,
+      "delta_points_vs_base": 0.5084745762711895
+    }
+  },
+  "qwen4b_open_bridge": {
+    "Base": {
+      "contradicted_reference": {
+        "count": 5,
+        "rate": 0.125
+      },
+      "mixed_or_self_contradictory": {
+        "count": 8,
+        "rate": 0.2
+      },
+      "supported_answer": {
+        "count": 9,
+        "rate": 0.225
+      },
+      "unresolved_needs_annotation": {
+        "count": 18,
+        "rate": 0.45
+      }
+    },
+    "HDA": {
+      "contradicted_reference": {
+        "count": 5,
+        "rate": 0.125
+      },
+      "mixed_or_self_contradictory": {
+        "count": 6,
+        "rate": 0.15
+      },
+      "supported_answer": {
+        "count": 8,
+        "rate": 0.2
+      },
+      "unresolved_needs_annotation": {
+        "count": 21,
+        "rate": 0.525
+      }
+    }
+  },
+  "qwen4b_ablation": [
+    {
+      "file": "patch_taskalign_l18to19_a1p0_seed41_full_diag.json",
+      "display_label": "patch_taskalign_l18to19_a1p0_seed41_full_diag.json",
+      "layers": [
+        18,
+        19
+      ],
+      "layer_label": "18-19",
+      "modules": "mlp",
+      "alpha": 1.0,
+      "delta_points": 0.3389830508474523,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_l18to19_a1p0_seed41_full_diag.json"
+    },
+    {
+      "file": "patch_taskalign_l18to19_a2p8_seed41_full_diag.json",
+      "display_label": "patch_taskalign_l18to19_a2p8_seed41_full_diag.json",
+      "layers": [
+        18,
+        19
+      ],
+      "layer_label": "18-19",
+      "modules": "mlp",
+      "alpha": 2.8,
+      "delta_points": 1.186440677966094,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_l18to19_a2p8_seed41_full_diag.json"
+    },
+    {
+      "file": "patch_taskalign_core3_a2p4_seed41_full_diag.json",
+      "display_label": "patch_taskalign_core3_a2p4_seed41_full_diag.json",
+      "layers": [
+        18,
+        19,
+        20
+      ],
+      "layer_label": "18-20",
+      "modules": "mlp",
+      "alpha": 2.4,
+      "delta_points": 1.186440677966094,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_core3_a2p4_seed41_full_diag.json"
+    },
+    {
+      "file": "patch_taskalign_l18to24_mlp_a0p8_full_diag.json",
+      "display_label": "patch_taskalign_l18to24_mlp_a0p8_full_diag.json",
+      "layers": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "layer_label": "18-24",
+      "modules": "mlp",
+      "alpha": 0.8,
+      "delta_points": 0.5084745762711784,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_l18to24_mlp_a0p8_full_diag.json"
+    },
+    {
+      "file": "patch_taskalign_l18to24_mlp_a1p2_full_diag.json",
+      "display_label": "patch_taskalign_l18to24_mlp_a1p2_full_diag.json",
+      "layers": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "layer_label": "18-24",
+      "modules": "mlp",
+      "alpha": 1.2,
+      "delta_points": 0.8474576271186418,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_l18to24_mlp_a1p2_full_diag.json"
+    },
+    {
+      "file": "patch_taskalign_l18to24_mlp_a1p6_seed41_full_diag.json",
+      "display_label": "patch_taskalign_l18to24_mlp_a1p6_seed41_full_diag.json",
+      "layers": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "layer_label": "18-24",
+      "modules": "mlp",
+      "alpha": 1.6,
+      "delta_points": 1.3559322033898313,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_l18to24_mlp_a1p6_seed41_full_diag.json"
+    },
+    {
+      "file": "patch_taskalign_l20to24_mlp_a0p8_full_diag.json",
+      "display_label": "patch_taskalign_l20to24_mlp_a0p8_full_diag.json",
+      "layers": [
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "layer_label": "20-24",
+      "modules": "mlp",
+      "alpha": 0.8,
+      "delta_points": 0.0,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_l20to24_mlp_a0p8_full_diag.json"
+    },
+    {
+      "file": "patch_taskalign_l20to24_attn_a0p8_full_diag.json",
+      "display_label": "patch_taskalign_l20to24_attn_a0p8_full_diag.json",
+      "layers": [
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "layer_label": "20-24",
+      "modules": "attn",
+      "alpha": 0.8,
+      "delta_points": -0.5084745762711895,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_l20to24_attn_a0p8_full_diag.json"
+    },
+    {
+      "file": "patch_taskalign_l18to24_both_a0p8_full_diag.json",
+      "display_label": "patch_taskalign_l18to24_both_a0p8_full_diag.json",
+      "layers": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "layer_label": "18-24",
+      "modules": "both",
+      "alpha": 0.8,
+      "delta_points": -0.3389830508474634,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_l18to24_both_a0p8_full_diag.json"
+    },
+    {
+      "file": "patch_taskalign_l20to24_both_a0p8_full_diag_repeat.json",
+      "display_label": "patch_taskalign_l20to24_both_a0p8_full_diag_repeat.json",
+      "layers": [
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "layer_label": "20-24",
+      "modules": "both",
+      "alpha": 0.8,
+      "delta_points": -0.3389830508474634,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_l20to24_both_a0p8_full_diag_repeat.json"
+    },
+    {
+      "file": "patch_taskalign_alllayers_mlp_a1p0_seed41_full_diag.json",
+      "display_label": "patch_taskalign_alllayers_mlp_a1p0_seed41_full_diag.json",
+      "layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "layer_label": "all",
+      "modules": "mlp",
+      "alpha": 1.0,
+      "delta_points": 0.16949152542372614,
+      "n_eval": 590,
+      "subset_only": false,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_alllayers_mlp_a1p0_seed41_full_diag.json"
+    },
+    {
+      "file": "patch_taskalign_alllayers_both_a1p0_sub.json",
+      "display_label": "patch_taskalign_alllayers_both_a1p0_sub.json",
+      "layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "layer_label": "all",
+      "modules": "both",
+      "alpha": 1.0,
+      "delta_points": -0.5555555555555536,
+      "n_eval": 180,
+      "subset_only": true,
+      "path": "C:\\Users\\19803\\Downloads\\Styles\\Styles\\Hallucination-Direction-Ablation\\experiments\\artifacts\\patch_taskalign_alllayers_both_a1p0_sub.json"
+    }
+  ],
+  "qwen4b_margin_shift": {
+    "corrected": 9,
+    "worsened": 2,
+    "unchanged": 579,
+    "fixed_count": 9,
+    "broken_count": 2
+  },
+  "cross_model_patch": [
+    {
+      "model": "Qwen3-4B",
+      "family": "Qwen3",
+      "truth_delta_points": 0.9661016949152523,
+      "truth_seeds": 10,
+      "positive_seeds": 10,
+      "mmlu_delta_points": 0.33333333333333337,
+      "hellaswag_delta_points": 0.2,
+      "gsm8k_delta_points": 0.5,
+      "worst_non_target_points": 0.2,
+      "drift_similarity": 0.9742726180847447,
+      "material_drift_rate": 0.02,
+      "notes": "Best balance; no non-target regression on the paired regression pack."
+    },
+    {
+      "model": "Qwen3-1.7B",
+      "family": "Qwen3",
+      "truth_delta_points": 0.27118644067796627,
+      "truth_seeds": 5,
+      "positive_seeds": 4,
+      "mmlu_delta_points": 1.0000000000000009,
+      "hellaswag_delta_points": 4.999999999999993,
+      "gsm8k_delta_points": 1.0000000000000009,
+      "worst_non_target_points": 1.0000000000000009,
+      "drift_similarity": 0.8874144475453964,
+      "material_drift_rate": null,
+      "notes": "Requires hard non-thinking mode; modest but reproducible gain."
+    },
+    {
+      "model": "Qwen3-0.6B",
+      "family": "Qwen3",
+      "truth_delta_points": 1.0169491525423746,
+      "truth_seeds": 5,
+      "positive_seeds": 4,
+      "mmlu_delta_points": 0.0,
+      "hellaswag_delta_points": 0.0,
+      "gsm8k_delta_points": -3.9999999999999982,
+      "worst_non_target_points": -3.9999999999999982,
+      "drift_similarity": 0.8161250782943975,
+      "material_drift_rate": null,
+      "notes": "Truthfulness improves, but collateral regression appears on GSM8K."
+    },
+    {
+      "model": "Llama-3.2-1B",
+      "family": "Llama-3.2",
+      "truth_delta_points": 1.288135593220343,
+      "truth_seeds": 5,
+      "positive_seeds": 5,
+      "mmlu_delta_points": 0.0,
+      "hellaswag_delta_points": -0.8,
+      "gsm8k_delta_points": -3.0,
+      "worst_non_target_points": -3.0,
+      "drift_similarity": 0.9612501321124037,
+      "material_drift_rate": 0.08,
+      "notes": "Cross-family transfer works, but GSM8K drops on the regression pack."
+    }
+  ],
+  "qwen_reasoning_diagnosis": [
+    {
+      "model": "Qwen/Qwen3-1.7B",
+      "mode": "default",
+      "n_eval": 100,
+      "accuracy": 0.48,
+      "pred_counts": {
+        "A": 100,
+        "B": 0
+      },
+      "correct_counts": {
+        "A": 48,
+        "B": 52
+      },
+      "share_a_pred": 1.0
+    },
+    {
+      "model": "Qwen/Qwen3-1.7B",
+      "mode": "hard_no_think",
+      "n_eval": 100,
+      "accuracy": 0.65,
+      "pred_counts": {
+        "A": 39,
+        "B": 61
+      },
+      "correct_counts": {
+        "A": 48,
+        "B": 52
+      },
+      "share_a_pred": 0.39
+    },
+    {
+      "model": "Qwen/Qwen3-1.7B",
+      "mode": "soft_no_think",
+      "n_eval": 100,
+      "accuracy": 0.48,
+      "pred_counts": {
+        "A": 100,
+        "B": 0
+      },
+      "correct_counts": {
+        "A": 48,
+        "B": 52
+      },
+      "share_a_pred": 1.0
+    },
+    {
+      "model": "Qwen/Qwen3-0.6B",
+      "mode": "default",
+      "n_eval": 100,
+      "accuracy": 0.48,
+      "pred_counts": {
+        "A": 100,
+        "B": 0
+      },
+      "correct_counts": {
+        "A": 48,
+        "B": 52
+      },
+      "share_a_pred": 1.0
+    },
+    {
+      "model": "Qwen/Qwen3-0.6B",
+      "mode": "hard_no_think",
+      "n_eval": 100,
+      "accuracy": 0.54,
+      "pred_counts": {
+        "A": 64,
+        "B": 36
+      },
+      "correct_counts": {
+        "A": 48,
+        "B": 52
+      },
+      "share_a_pred": 0.64
+    },
+    {
+      "model": "Qwen/Qwen3-0.6B",
+      "mode": "soft_no_think",
+      "n_eval": 100,
+      "accuracy": 0.48,
+      "pred_counts": {
+        "A": 100,
+        "B": 0
+      },
+      "correct_counts": {
+        "A": 48,
+        "B": 52
+      },
+      "share_a_pred": 1.0
+    }
+  ]
+}
