@@ -14,6 +14,9 @@ wheels/
 experiments/artifacts/
 !experiments/artifacts/
 experiments/artifacts/*
+!experiments/artifacts/analysis/
+experiments/artifacts/analysis/*
+!experiments/artifacts/analysis/*.json
 !experiments/artifacts/EXPERIMENT_PROGRESS_*.md
 experiments/data/prepared/
 experiments/data/prepared_smoke/
