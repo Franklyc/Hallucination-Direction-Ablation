@@ -96,6 +96,11 @@ def parse_args():
         help="Bootstrap rounds for CI",
     )
     parser.add_argument(
+        "--disable-thinking",
+        action="store_true",
+        help="Pass enable_thinking=False to tokenizer.apply_chat_template when supported",
+    )
+    parser.add_argument(
         "--diagnostic-top-k",
         type=int,
         default=20,
@@ -118,13 +123,19 @@ def evaluate_binary(
     candidate_a: str,
     candidate_b: str,
     bootstrap_rounds: int,
+    disable_thinking: bool = False,
 ):
     y_true = []
     y_pred = []
     rows = []
     for item in tqdm(items, desc="Eval"):
         row_rng = random.Random(seed + stable_hash(item.question))
-        prompt, correct, _, _ = make_binary_instance(item, row_rng, tokenizer)
+        prompt, correct, _, _ = make_binary_instance(
+            item,
+            row_rng,
+            tokenizer,
+            enable_thinking=False if disable_thinking else None,
+        )
 
         lp_a = sequence_logprob(
             model,
@@ -237,6 +248,7 @@ def main():
         candidate_a=cand_a,
         candidate_b=cand_b,
         bootstrap_rounds=args.bootstrap,
+        disable_thinking=args.disable_thinking,
     )
 
     patch_log = []
@@ -282,6 +294,7 @@ def main():
         candidate_a=cand_a,
         candidate_b=cand_b,
         bootstrap_rounds=args.bootstrap,
+        disable_thinking=args.disable_thinking,
     )
 
     diagnostics = summarize_intervention_rows(
@@ -302,6 +315,7 @@ def main():
         "layers": selected_layers,
         "alpha": args.alpha,
         "modules": args.modules,
+        "disable_thinking": args.disable_thinking,
         "base": {k: v for k, v in base.items() if k != "rows"},
         "patched": {k: v for k, v in patched.items() if k != "rows"},
         "delta_acc": patched["acc"] - base["acc"],

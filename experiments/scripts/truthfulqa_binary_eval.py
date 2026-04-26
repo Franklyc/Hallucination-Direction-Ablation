@@ -72,6 +72,11 @@ def parse_args():
         help="Bootstrap rounds for CI",
     )
     parser.add_argument(
+        "--disable-thinking",
+        action="store_true",
+        help="Pass enable_thinking=False to tokenizer.apply_chat_template when supported",
+    )
+    parser.add_argument(
         "--output-json",
         default="experiments/artifacts/baseline_binary_eval.json",
         help="Where to save metrics",
@@ -106,7 +111,12 @@ def main():
 
     for item in tqdm(eval_items, desc="Binary eval"):
         row_rng = random.Random(args.seed + stable_hash(item.question))
-        prompt, correct, a_text, b_text = make_binary_instance(item, row_rng, tokenizer)
+        prompt, correct, a_text, b_text = make_binary_instance(
+            item,
+            row_rng,
+            tokenizer,
+            enable_thinking=False if args.disable_thinking else None,
+        )
 
         lp_a = sequence_logprob(
             model,
@@ -155,6 +165,7 @@ def main():
         "load_in_4bit": args.load_in_4bit,
         "gpu_memory_gb": args.gpu_memory_gb,
         "candidate_prefix": args.candidate_prefix,
+        "disable_thinking": args.disable_thinking,
         "seed": args.seed,
         "n_eval": len(eval_items),
         "calibration_size": args.calibration_size,

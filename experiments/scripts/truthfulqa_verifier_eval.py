@@ -308,6 +308,21 @@ def validate_template_ids(template_ids):
         raise ValueError(f"Unknown verifier template ids: {unknown}")
 
 
+def build_scoring_plan(verdict_prefixes, forced_template_ids, force_verdict_prefix):
+    template_by_id = {template["id"]: template for template in VERIFIER_TEMPLATES}
+    if forced_template_ids:
+        return [
+            (force_verdict_prefix, template_by_id[template_id])
+            for template_id in forced_template_ids
+        ]
+
+    return [
+        (prefix, template)
+        for prefix in verdict_prefixes
+        for template in VERIFIER_TEMPLATES
+    ]
+
+
 def build_verifier_rows(items, score_rows, config: dict, seed: int):
     rows = []
     y_true = []
@@ -425,42 +440,40 @@ def main():
     device = get_primary_device(model)
 
     all_items = calibration_items + eval_items
+    scoring_plan = build_scoring_plan(
+        verdict_prefixes,
+        forced_template_ids,
+        args.force_verdict_prefix,
+    )
     score_rows = []
     for item in tqdm(all_items, desc="Verifier scoring"):
         row_scores = {}
-        for prefix in verdict_prefixes:
-            for template in VERIFIER_TEMPLATES:
-                key = f"{template['id']}|{prefix}"
-                row_scores[key] = {
-                    "correct": score_answer_truthfulness(
-                        model,
-                        tokenizer,
-                        device,
-                        item.question,
-                        item.best_answer,
-                        template,
-                        prefix,
-                    ),
-                    "incorrect": score_answer_truthfulness(
-                        model,
-                        tokenizer,
-                        device,
-                        item.question,
-                        item.best_incorrect_answer,
-                        template,
-                        prefix,
-                    ),
-                }
+        for prefix, template in scoring_plan:
+            key = f"{template['id']}|{prefix}"
+            row_scores[key] = {
+                "correct": score_answer_truthfulness(
+                    model,
+                    tokenizer,
+                    device,
+                    item.question,
+                    item.best_answer,
+                    template,
+                    prefix,
+                ),
+                "incorrect": score_answer_truthfulness(
+                    model,
+                    tokenizer,
+                    device,
+                    item.question,
+                    item.best_incorrect_answer,
+                    template,
+                    prefix,
+                ),
+            }
         score_rows.append(row_scores)
 
     calibration_scores = score_rows[: len(calibration_items)]
     eval_scores = score_rows[len(calibration_items) :]
-    candidate_rows = build_config_candidates(
-        verdict_prefixes,
-        score_rows,
-        calibration_items,
-        calibration_scores,
-    )
     if forced_template_ids:
         forced_templates_slug = "+".join(forced_template_ids)
         selected_config = make_verifier_config(
@@ -479,7 +492,14 @@ def main():
             "calibration_accuracy": float(selected_accuracy),
             "calibration_mean_margin_gap": float(selected_margin),
         }
+        candidate_rows = [selected]
     else:
+        candidate_rows = build_config_candidates(
+            verdict_prefixes,
+            score_rows,
+            calibration_items,
+            calibration_scores,
+        )
         selected = candidate_rows[0]
         selected_config = selected["config"]
 

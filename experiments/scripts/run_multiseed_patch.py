@@ -7,79 +7,31 @@ from pathlib import Path
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run calibration-selected verifier reranking across multiple seeds")
-    parser.add_argument(
-        "--model",
-        default="Qwen/Qwen3-4B-Instruct-2507",
-        help="HF model id or local path",
-    )
+    parser = argparse.ArgumentParser(description="Run a fixed HDA weight patch config across multiple seeds.")
+    parser.add_argument("--model", default="Qwen/Qwen3-4B-Instruct-2507", help="HF model id or local path")
+    parser.add_argument("--truthfulqa-csv", default="experiments/data/TruthfulQA.csv", help="Path to TruthfulQA CSV")
+    parser.add_argument("--directions", required=True, help="Path to directions npz")
     parser.add_argument("--dtype", default="bfloat16", help="Model dtype")
-    parser.add_argument(
-        "--gpu-memory-gb",
-        type=int,
-        default=15,
-        help="Per-GPU memory cap in GiB for model loading",
-    )
-    parser.add_argument(
-        "--load-in-4bit",
-        action="store_true",
-        help="Use 4-bit loading for verifier runs",
-    )
+    parser.add_argument("--gpu-memory-gb", type=int, default=15, help="Per-GPU memory cap in GiB")
     parser.add_argument(
         "--seeds",
-        default="7,13,29",
-        help="Comma-separated seeds to run",
+        default="23,29,31,53,67,89,123",
+        help="Comma-separated seeds to run for this fixed config",
     )
-    parser.add_argument(
-        "--calibration-size",
-        type=int,
-        default=200,
-        help="Calibration split size",
-    )
-    parser.add_argument(
-        "--max-samples",
-        type=int,
-        default=0,
-        help="Optional row cap before split",
-    )
-    parser.add_argument(
-        "--candidate-prefix",
-        default="newline",
-        choices=["space", "newline", "none"],
-        help="Prefix style for the baseline A/B scorer",
-    )
-    parser.add_argument(
-        "--verdict-prefixes",
-        default="newline",
-        help="Comma-separated prefix styles for yes/no verifier scoring",
-    )
-    parser.add_argument(
-        "--force-template-ids",
-        default="",
-        help="Optional comma-separated verifier template ids to force instead of calibration selection",
-    )
-    parser.add_argument(
-        "--force-verdict-prefix",
-        default="",
-        choices=["", "space", "newline", "none"],
-        help="Optional forced verdict prefix used with --force-template-ids",
-    )
-    parser.add_argument(
-        "--bootstrap",
-        type=int,
-        default=400,
-        help="Bootstrap rounds for per-seed eval",
-    )
+    parser.add_argument("--calibration-size", type=int, default=200, help="Calibration split size")
+    parser.add_argument("--candidate-prefix", default="newline", choices=["space", "newline", "none"])
+    parser.add_argument("--disable-thinking", action="store_true")
+    parser.add_argument("--layers", required=True, help="Comma-separated layer indices")
+    parser.add_argument("--alpha", type=float, required=True, help="Patch alpha")
+    parser.add_argument("--modules", default="mlp", choices=["attn", "mlp", "both"])
+    parser.add_argument("--bootstrap", type=int, default=1000, help="Bootstrap rounds per seed")
+    parser.add_argument("--diagnostic-top-k", type=int, default=20)
     parser.add_argument(
         "--output-dir",
-        default="experiments/artifacts/verifier_multiseed",
-        help="Where to save per-seed and aggregate outputs",
+        default="experiments/artifacts/patch_multiseed",
+        help="Directory to save per-seed results",
     )
-    parser.add_argument(
-        "--skip-existing",
-        action="store_true",
-        help="Reuse existing per-seed outputs when present",
-    )
+    parser.add_argument("--skip-existing", action="store_true", help="Reuse existing per-seed outputs when present")
     return parser.parse_args()
 
 
@@ -100,13 +52,6 @@ def run_command(command, workdir: Path):
     subprocess.run(command, cwd=str(workdir), check=True)
 
 
-def resolve_cli_path(path_str: str, workdir: Path) -> Path:
-    path = Path(path_str)
-    if path.is_absolute():
-        return path
-    return workdir / path
-
-
 def load_json(path: Path):
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
@@ -114,7 +59,7 @@ def load_json(path: Path):
 
 def build_category_delta(result: dict):
     base = result.get("base", {}).get("category_accuracy", {})
-    new = result.get("verifier", {}).get("category_accuracy", {})
+    new = result.get("patched", {}).get("category_accuracy", {})
     out = {}
     for category in sorted(set(base) | set(new)):
         base_acc = base.get(category, {}).get("accuracy")
@@ -129,53 +74,49 @@ def main():
     args = parse_args()
     workdir = Path(__file__).resolve().parents[2]
     script_dir = Path(__file__).resolve().parent
-    output_dir = resolve_cli_path(args.output_dir, workdir)
+    output_dir = workdir / args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
     python_exe = sys.executable
     seeds = parse_seed_list(args.seeds)
 
     per_seed = []
     for seed in seeds:
-        seed_dir = output_dir / f"seed_{seed}"
-        seed_dir.mkdir(parents=True, exist_ok=True)
-        result_path = seed_dir / "verifier_eval.json"
-
+        result_path = output_dir / f"patch_seed{seed}.json"
         if not (args.skip_existing and result_path.exists()):
             cmd = [
                 python_exe,
-                str(script_dir / "truthfulqa_verifier_eval.py"),
+                str(script_dir / "weight_patch_eval.py"),
                 "--model",
                 args.model,
+                "--truthfulqa-csv",
+                args.truthfulqa_csv,
+                "--directions",
+                args.directions,
                 "--dtype",
                 args.dtype,
                 "--gpu-memory-gb",
                 str(args.gpu_memory_gb),
+                "--candidate-prefix",
+                args.candidate_prefix,
+                "--disable-thinking" if args.disable_thinking else "",
                 "--seed",
                 str(seed),
                 "--calibration-size",
                 str(args.calibration_size),
-                "--candidate-prefix",
-                args.candidate_prefix,
-                "--verdict-prefixes",
-                args.verdict_prefixes,
+                "--layers",
+                args.layers,
+                "--alpha",
+                str(args.alpha),
+                "--modules",
+                args.modules,
                 "--bootstrap",
                 str(args.bootstrap),
+                "--diagnostic-top-k",
+                str(args.diagnostic_top_k),
                 "--output-json",
                 str(result_path),
             ]
-            if args.force_template_ids:
-                cmd.extend(
-                    [
-                        "--force-template-ids",
-                        args.force_template_ids,
-                        "--force-verdict-prefix",
-                        args.force_verdict_prefix,
-                    ]
-                )
-            if args.max_samples > 0:
-                cmd.extend(["--max-samples", str(args.max_samples)])
-            if args.load_in_4bit:
-                cmd.append("--load-in-4bit")
+            cmd = [part for part in cmd if part != ""]
             run_command(cmd, workdir=workdir)
 
         result = load_json(result_path)
@@ -183,9 +124,8 @@ def main():
             {
                 "seed": seed,
                 "base_acc": float(result.get("base", {}).get("acc", 0.0)),
-                "verifier_acc": float(result.get("verifier", {}).get("acc", 0.0)),
+                "patched_acc": float(result.get("patched", {}).get("acc", 0.0)),
                 "delta_acc": float(result.get("delta_acc", 0.0)),
-                "selected_config": result.get("selected_config", {}).get("key"),
                 "fixed_count": int(result.get("diagnostics", {}).get("fixed_count", 0)),
                 "broken_count": int(result.get("diagnostics", {}).get("broken_count", 0)),
                 "paired_sign_test_pvalue": float(
@@ -206,14 +146,13 @@ def main():
         "config": {
             "model": args.model,
             "dtype": args.dtype,
-            "load_in_4bit": args.load_in_4bit,
             "gpu_memory_gb": args.gpu_memory_gb,
             "calibration_size": args.calibration_size,
-            "max_samples": args.max_samples,
             "candidate_prefix": args.candidate_prefix,
-            "verdict_prefixes": args.verdict_prefixes,
-            "force_template_ids": args.force_template_ids,
-            "force_verdict_prefix": args.force_verdict_prefix,
+            "disable_thinking": args.disable_thinking,
+            "layers": [int(x) for x in args.layers.split(",") if x.strip()],
+            "alpha": args.alpha,
+            "modules": args.modules,
             "bootstrap": args.bootstrap,
             "seeds": seeds,
         },
@@ -226,9 +165,6 @@ def main():
             "max_delta_acc": float(max(deltas)),
             "positive_seed_count": int(sum(1 for value in deltas if value > 0)),
             "nonnegative_seed_count": int(sum(1 for value in deltas if value >= 0)),
-            "selected_configs": sorted(
-                {row["selected_config"] for row in per_seed if row["selected_config"]}
-            ),
         },
         "category_delta_accuracy_mean": {
             category: float(statistics.mean(values))
@@ -243,7 +179,7 @@ def main():
 
     print(f"Saved aggregate summary to: {aggregate_path}")
     print(
-        "multi-seed summary: "
+        "multi-seed patch summary: "
         f"mean_delta_acc={100.0 * aggregate['summary']['mean_delta_acc']:.2f} points "
         f"positive_seeds={aggregate['summary']['positive_seed_count']}/{aggregate['summary']['n_seeds']}"
     )

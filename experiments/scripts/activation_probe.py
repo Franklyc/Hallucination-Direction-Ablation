@@ -97,6 +97,11 @@ def parse_args():
         help="Bootstrap rounds for CI",
     )
     parser.add_argument(
+        "--disable-thinking",
+        action="store_true",
+        help="Pass enable_thinking=False to tokenizer.apply_chat_template when supported",
+    )
+    parser.add_argument(
         "--diagnostic-top-k",
         type=int,
         default=20,
@@ -184,6 +189,7 @@ def evaluate(
     candidate_b: str,
     bootstrap_rounds: int,
     context: ProbeContext,
+    disable_thinking: bool = False,
 ) -> Dict:
     y_true = []
     y_pred = []
@@ -191,7 +197,12 @@ def evaluate(
 
     for item in tqdm(items, desc="Eval"):
         row_rng = random.Random(seed + stable_hash(item.question))
-        prompt, correct, _, _ = make_binary_instance(item, row_rng, tokenizer)
+        prompt, correct, _, _ = make_binary_instance(
+            item,
+            row_rng,
+            tokenizer,
+            enable_thinking=False if disable_thinking else None,
+        )
 
         lp_a = sequence_logprob_with_hooks(
             model,
@@ -295,6 +306,7 @@ def main():
         candidate_b=cand_b,
         bootstrap_rounds=args.bootstrap,
         context=context,
+        disable_thinking=args.disable_thinking,
     )
 
     hook_handles = []
@@ -319,6 +331,7 @@ def main():
         candidate_b=cand_b,
         bootstrap_rounds=args.bootstrap,
         context=context,
+        disable_thinking=args.disable_thinking,
     )
 
     for h in hook_handles:
@@ -342,6 +355,7 @@ def main():
         "layers": selected_layers,
         "beta": args.beta,
         "hook_position": args.hook_position,
+        "disable_thinking": args.disable_thinking,
         "base": {k: v for k, v in base.items() if k not in {"y_true", "y_pred", "rows"}},
         "intervened": {k: v for k, v in intervened.items() if k not in {"y_true", "y_pred", "rows"}},
         "delta_acc": intervened["acc"] - base["acc"],

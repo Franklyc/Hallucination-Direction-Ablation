@@ -44,5 +44,9 @@ experiments/data/TruthfulQA.csv
 /milestone report
 *.tex
 !final_report.tex
+!final_report_revised.tex
 /experiments/plans
 build_milestone_report.ps1
+/docs/superpowers
+/experiments/artifacts
+/final report

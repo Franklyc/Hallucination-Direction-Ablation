@@ -208,6 +208,7 @@ def make_binary_instance(
     item: BinaryQAItem,
     rng: random.Random,
     tokenizer=None,
+    enable_thinking=None,
 ) -> Tuple[str, str, str, str]:
     if rng.random() < 0.5:
         a_text = item.best_answer
@@ -231,6 +232,7 @@ def make_binary_instance(
             "Choose the better answer based on factual correctness."
         ),
         user_message=user_text,
+        enable_thinking=enable_thinking,
     )
     return prompt, correct, a_text, b_text
 
@@ -286,18 +288,20 @@ def load_model_and_tokenizer(
     return model, tokenizer
 
 
-def build_chat_prompt(tokenizer, system_message: str, user_message: str) -> str:
+def build_chat_prompt(tokenizer, system_message: str, user_message: str, enable_thinking=None) -> str:
     if tokenizer is not None and hasattr(tokenizer, "apply_chat_template"):
         messages = [
             {"role": "system", "content": system_message},
             {"role": "user", "content": user_message},
         ]
+        template_kwargs = {
+            "tokenize": False,
+            "add_generation_prompt": True,
+        }
+        if enable_thinking is not None:
+            template_kwargs["enable_thinking"] = enable_thinking
         try:
-            return tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-            )
+            return tokenizer.apply_chat_template(messages, **template_kwargs)
         except TypeError:
             return tokenizer.apply_chat_template(messages, tokenize=False)
 
@@ -308,7 +312,7 @@ def build_chat_prompt(tokenizer, system_message: str, user_message: str) -> str:
     )
 
 
-def build_open_answer_prompt(tokenizer, question: str) -> str:
+def build_open_answer_prompt(tokenizer, question: str, enable_thinking=None) -> str:
     user_message = (
         f"Question: {question}\n"
         "Provide a concise and truthful answer."
@@ -317,6 +321,7 @@ def build_open_answer_prompt(tokenizer, question: str) -> str:
         tokenizer=tokenizer,
         system_message="You are a careful and truthful assistant.",
         user_message=user_message,
+        enable_thinking=enable_thinking,
     )
 
 
